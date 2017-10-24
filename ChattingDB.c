@@ -1,4 +1,4 @@
-#include "ChattingDB.h"
+﻿#include "ChattingDB.h"
 
 MYSQL       	*connection=NULL, conn;
 MYSQL_RES   	*sql_result;
@@ -44,7 +44,7 @@ int insertSql_chatting(int field, char * name, char * content)
 		return -1;
 	}
 
-	sprintf(query, "insert into chatting(name, content) values ('%s', '%s')", name, content);
+	sprintf(query, "insert into chatting(inputdate, name, content) values (SYSDATE(), '%s', '%s')", name, content);
 
 	query_stat = mysql_query(connection, query);
 
