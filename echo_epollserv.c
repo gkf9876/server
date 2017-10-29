@@ -14,18 +14,22 @@ void error_handling(char * message);
 int sendCommand(int sock, int code, char * message);
 int readCommand(int sock, int * code, char * buf);
 
+int SeparateString(char * str, char(*arr)[BUF_SIZE], int arrLen, char flag);
+
 int main(int argc, char * argv[])
 {
 	int serv_sock, cInt_sock;
 	struct sockaddr_in serv_adr, cInt_adr;
 	socklen_t adr_sz;
 	int str_len, i;
-	//char buf[BUF_SIZE];
 	char sendBuf[BUF_SIZE];
 	char readBuf[BUF_SIZE];
 	int code;
 	char name[50];
 	char content[100];
+
+	MYSQL_RES   	*sql_result;
+	MYSQL_ROW   	sql_row;
 
 
 	struct epoll_event * ep_events;
@@ -81,6 +85,16 @@ int main(int argc, char * argv[])
 				event.data.fd = cInt_sock;
 				epoll_ctl(epfd, EPOLL_CTL_ADD, cInt_sock, &event);
 				printf("connected client : %d\n", cInt_sock);
+
+				char userName[50];
+				sprintf(userName, "User%d", cInt_sock);
+				User user;
+				strcpy(user.name, userName);
+				user.sock = cInt_sock;
+				user.xpos = 33;
+				user.ypos = 77;
+				user.field = 22;
+				insertSql_UserInfo(user);
 			}
 			else
 			{
@@ -91,28 +105,48 @@ int main(int argc, char * argv[])
 					epoll_ctl(epfd, EPOLL_CTL_DEL, ep_events[i].data.fd, NULL);
 					close(ep_events[i].data.fd);
 					printf("closed client : %d\n", ep_events[i].data.fd);
+
+					deleteSql_UserInfo(ep_events[i].data.fd);
 				}
 				else
 				{
 					switch(code)
 					{
-					case 1:
+					case 1:			//유저 정보 요청시
 						printf("code : %d, content : %s\n", code, readBuf);
-						selectSql_chatting(0);
+						sql_result = selectSql_UserInfo(ep_events[i].data.fd);
+						sql_row = mysql_fetch_row(sql_result);
+
+						sprintf(sendBuf, "%s\n%s\n%s\n%s", sql_row[0], sql_row[1], sql_row[2], sql_row[3]);
+
+						str_len = sendCommand(ep_events[i].data.fd, code, sendBuf);
+
+						mysql_free_result(sql_result);
 						break;
-					case 2:
+					case 2:			//채팅시
 						printf("code : %d, content : %s\n", code, readBuf);
 
-						strcpy(name, strtok(readBuf, "\n"));
-						strcpy(content, strtok(NULL, "\n"));
+						char chattingInfo[2][BUF_SIZE];
+						int len = SeparateString(readBuf, chattingInfo, sizeof(chattingInfo) / BUF_SIZE, '\n');
+
+						strcpy(name, chattingInfo[0]);
+						strcpy(content, chattingInfo[1]);
 
 						insertSql_chatting(0, name, content);
+
+						sql_result = selectSql_chatting(22);
+
+						while ((sql_row = mysql_fetch_row(sql_result)) != NULL)
+						{
+							str_len = sendCommand(atoi(sql_row[0]), code, readBuf);
+						}
+						mysql_free_result(sql_result);
+
 						break;
 					default:
 						break;
 					}
 
-					str_len = sendCommand(ep_events[i].data.fd, code, readBuf);
 					memset(readBuf, 0, BUF_SIZE);
 				}
 			}
@@ -212,4 +246,42 @@ int readCommand(int sock, int * code, char * buf)
 	buf[len] = 0;
 
 	return len;
+}
+
+int SeparateString(char * str, char(*arr)[BUF_SIZE], int arrLen, char flag)
+{
+	char imsi[BUF_SIZE];
+	char strarr[BUF_SIZE];
+	int count = 0;
+	int j = 0;
+
+	strcpy(imsi, str);
+
+	for (int i = 0; i < strlen(imsi) + 1; i++)
+	{
+		if (imsi[i] == flag)
+		{
+			strarr[j] = 0;
+			if (count >= arrLen)
+				break;
+			else
+				strcpy(arr[count++], strarr);
+			j = 0;
+			continue;
+		}
+		else if (i == strlen(imsi))
+		{
+			strarr[j] = 0;
+			if (count >= arrLen)
+				break;
+			else
+				strcpy(arr[count++], strarr);
+			break;
+		}
+
+		strarr[j] = imsi[i];
+		j++;
+	}
+
+	return count;
 }

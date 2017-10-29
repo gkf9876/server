@@ -34,6 +34,24 @@ int closeMySQL_chatting()
 		return -1;	
 }
 
+MYSQL_RES * selectSql_UserInfo(int number)
+{
+	char query[255];
+
+	sprintf(query, "SELECT NAME, XPOS, YPOS, FIELD FROM USERS WHERE SOCK = '%d'", number);
+
+	query_stat = mysql_query(connection, query);
+	if (query_stat != 0)
+	{
+		fprintf(stderr, "Mysql select query error : %s", mysql_error(&conn));
+		fprintf(stderr, "Sql : %s", query);
+	}
+
+	sql_result = mysql_store_result(connection);
+
+	return sql_result;
+}
+
 int insertSql_chatting(int field, char * name, char * content)
 {
 	char query[255];
@@ -51,6 +69,7 @@ int insertSql_chatting(int field, char * name, char * content)
 	if (query_stat != 0)
 	{
 		fprintf(stderr, "Mysql insert query error : %s", mysql_error(&conn));
+		fprintf(stderr, "Sql : %s", query);
 		return -1;
 	}
 
@@ -65,29 +84,57 @@ int updateSql_chatting(int field)
 {
 }
 
-int selectSql_chatting(int field)
+MYSQL_RES * selectSql_chatting(int field)
 {
 	char query[255];
 
-	sprintf(query, "select idx, name, content from chatting where field = '%d'", field);
+	sprintf(query, "SELECT SOCK, NAME, XPOS, YPOS, FIELD FROM USERS WHERE FIELD = '%d'", field);
 
 	query_stat = mysql_query(connection, query);
 	if (query_stat != 0)
 	{
 		fprintf(stderr, "Mysql select query error : %s", mysql_error(&conn));
-		return -1;
+		fprintf(stderr, "Sql : %s", query);
 	}
 
 	sql_result = mysql_store_result(connection);
 
-	printf("%s %s %s\n", "IDX", "작성자", "내용");
+	return sql_result;
+}
 
-	while ( (sql_row = mysql_fetch_row(sql_result)) != NULL )
+int insertSql_UserInfo(User user)
+{
+	char query[255];
+
+	sprintf(query, "INSERT INTO USERS(SOCK, NAME, PASSWORD, XPOS, YPOS, FIELD) VALUES ('%d', '%s', '%s', '%d', '%d', '%d')"
+		, user.sock, user.name, user.password, user.xpos, user.ypos, user.field);
+
+	query_stat = mysql_query(connection, query);
+
+	if (query_stat != 0)
 	{
-		printf("%s %s %s\n", sql_row[0], sql_row[1], sql_row[2]);
+		fprintf(stderr, "Mysql insert query error : %s", mysql_error(&conn));
+		fprintf(stderr, "Sql : %s", query);
+		return -1;
 	}
 
-	mysql_free_result(sql_result);
+	return 1;
+}
+
+int deleteSql_UserInfo(int sock)
+{
+	char query[255];
+
+	sprintf(query, "delete from users where sock = '%d'", sock);
+
+	query_stat = mysql_query(connection, query);
+
+	if (query_stat != 0)
+	{
+		fprintf(stderr, "Mysql insert query error : %s", mysql_error(&conn));
+		fprintf(stderr, "Sql : %s", query);
+		return -1;
+	}
 
 	return 1;
 }
