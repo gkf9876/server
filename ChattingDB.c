@@ -34,6 +34,24 @@ int closeMySQL_chatting()
 		return -1;	
 }
 
+MYSQL_RES * selectSql_isUser(char * user)
+{
+	char query[255];
+
+	sprintf(query, "SELECT COUNT(ID) FROM USER_LIST WHERE ID = '%s'", user);
+
+	query_stat = mysql_query(connection, query);
+	if (query_stat != 0)
+	{
+		fprintf(stderr, "Mysql select query error : %s", mysql_error(&conn));
+		fprintf(stderr, "Sql : %s", query);
+	}
+
+	sql_result = mysql_store_result(connection);
+
+	return sql_result;
+}
+
 MYSQL_RES * selectSql_UserInfo(int number)
 {
 	char query[255];

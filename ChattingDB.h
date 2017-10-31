@@ -12,11 +12,6 @@
 #define DB_PASS "doeltms08"
 #define DB_NAME "test"
 
-//MYSQL       	*connection=NULL, conn;
-//MYSQL_RES   	*sql_result;
-//MYSQL_ROW   	sql_row;
-//int 		query_stat; 
-
 typedef struct user
 {
 	int sock;
@@ -29,6 +24,8 @@ typedef struct user
 
 int openMySQL_chatting();
 int closeMySQL_chatting();
+
+MYSQL_RES * selectSql_isUser(char * user);
 
 MYSQL_RES * selectSql_UserInfo(int number);
 

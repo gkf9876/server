@@ -10,6 +10,10 @@
 #define BUF_SIZE 100
 #define EPOLL_SIZE 50
 
+#define REQUEST_USER_INFO				1
+#define REQUEST_LOGIN					2
+#define CHATTING_PROCESS				3
+
 void error_handling(char * message);
 int sendCommand(int sock, int code, char * message);
 int readCommand(int sock, int * code, char * buf);
@@ -85,16 +89,6 @@ int main(int argc, char * argv[])
 				event.data.fd = cInt_sock;
 				epoll_ctl(epfd, EPOLL_CTL_ADD, cInt_sock, &event);
 				printf("connected client : %d\n", cInt_sock);
-
-				char userName[50];
-				sprintf(userName, "User%d", cInt_sock);
-				User user;
-				strcpy(user.name, userName);
-				user.sock = cInt_sock;
-				user.xpos = 33;
-				user.ypos = 77;
-				user.field = 22;
-				insertSql_UserInfo(user);
 			}
 			else
 			{
@@ -112,7 +106,7 @@ int main(int argc, char * argv[])
 				{
 					switch(code)
 					{
-					case 1:			//유저 정보 요청시
+					case REQUEST_USER_INFO:			//유저 정보 요청시
 						printf("code : %d, content : %s\n", code, readBuf);
 						sql_result = selectSql_UserInfo(ep_events[i].data.fd);
 						sql_row = mysql_fetch_row(sql_result);
@@ -123,7 +117,7 @@ int main(int argc, char * argv[])
 
 						mysql_free_result(sql_result);
 						break;
-					case 2:			//채팅시
+					case CHATTING_PROCESS:			//채팅시
 						printf("code : %d, content : %s\n", code, readBuf);
 
 						char chattingInfo[2][BUF_SIZE];
@@ -142,6 +136,32 @@ int main(int argc, char * argv[])
 						}
 						mysql_free_result(sql_result);
 
+						break;
+					case REQUEST_LOGIN:				//로그인 승인시
+						printf("code : %d, content : %s\n", code, readBuf);
+						sql_result = selectSql_isUser(readBuf);
+						sql_row = mysql_fetch_row(sql_result);
+
+						int count = atoi(sql_row[0]);
+
+						if (count > 0)
+						{
+							str_len = sendCommand(ep_events[i].data.fd, code, "login okey");
+
+							char userName[50];
+							sprintf(userName, "%s", readBuf);
+							User user;
+							strcpy(user.name, userName);
+							user.sock = cInt_sock;
+							user.xpos = 33;
+							user.ypos = 77;
+							user.field = 22;
+							insertSql_UserInfo(user);
+						}
+						else
+							str_len = sendCommand(ep_events[i].data.fd, code, "login fail");
+
+						mysql_free_result(sql_result);
 						break;
 					default:
 						break;
