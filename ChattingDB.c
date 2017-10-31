@@ -38,7 +38,7 @@ MYSQL_RES * selectSql_isUser(char * user)
 {
 	char query[255];
 
-	sprintf(query, "SELECT COUNT(ID) FROM USER_LIST WHERE ID = '%s'", user);
+	sprintf(query, "SELECT COUNT(A.ID) AS COUNT FROM USER_LIST A, (SELECT COUNT(NAME) AS COUNT FROM USERS WHERE NAME = '%s') B WHERE A.ID = '%s' AND B.COUNT = 0", user, user);
 
 	query_stat = mysql_query(connection, query);
 	if (query_stat != 0)
@@ -80,7 +80,7 @@ int insertSql_chatting(int field, char * name, char * content)
 		return -1;
 	}
 
-	sprintf(query, "insert into chatting(inputdate, name, content) values (SYSDATE(), '%s', '%s')", name, content);
+	sprintf(query, "INSERT INTO CHATTING(INPUTDATE, NAME, CONTENT) VALUES (SYSDATE(), '%s', '%s')", name, content);
 
 	query_stat = mysql_query(connection, query);
 
