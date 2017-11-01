@@ -13,12 +13,15 @@
 #define REQUEST_USER_INFO				1
 #define REQUEST_LOGIN					2
 #define CHATTING_PROCESS				3
+#define USER_MOVE_UPDATE				4
 
 void error_handling(char * message);
 int sendCommand(int sock, int code, char * message);
 int readCommand(int sock, int * code, char * buf);
 
 int SeparateString(char * str, char(*arr)[BUF_SIZE], int arrLen, char flag);
+void IntToChar(int value, char * result);
+void CharToInt(char * value, int * result);
 
 int main(int argc, char * argv[])
 {
@@ -31,6 +34,12 @@ int main(int argc, char * argv[])
 	int code;
 	char name[50];
 	char content[100];
+
+	char userMoveInfo[4][BUF_SIZE];
+	int len;
+	int xpos;
+	int ypos;
+	char field[100];
 
 	MYSQL_RES   	*sql_result;
 	MYSQL_ROW   	sql_row;
@@ -121,7 +130,7 @@ int main(int argc, char * argv[])
 						printf("code : %d, content : %s\n", code, readBuf);
 
 						char chattingInfo[2][BUF_SIZE];
-						int len = SeparateString(readBuf, chattingInfo, sizeof(chattingInfo) / BUF_SIZE, '\n');
+						len = SeparateString(readBuf, chattingInfo, sizeof(chattingInfo) / BUF_SIZE, '\n');
 
 						strcpy(name, chattingInfo[0]);
 						strcpy(content, chattingInfo[1]);
@@ -163,6 +172,18 @@ int main(int argc, char * argv[])
 
 						mysql_free_result(sql_result);
 						break;
+					case USER_MOVE_UPDATE:
+						len = SeparateString(readBuf, userMoveInfo, sizeof(userMoveInfo) / BUF_SIZE, '\n');
+
+						strcpy(name, userMoveInfo[0]);
+						xpos = atoi(userMoveInfo[1]);
+						ypos = atoi(userMoveInfo[2]);
+						strcpy(field, userMoveInfo[3]);
+						updateUserMove(name, xpos, ypos, field);
+
+						printf("userName : %s, xpos : %d, ypos : %d, field : %s\n", name, xpos, ypos, field);
+						str_len = sendCommand(ep_events[i].data.fd, code, "user move!!");
+						break;
 					default:
 						break;
 					}
@@ -193,15 +214,9 @@ int sendCommand(int sock, int code, char * message)
 	char buf[BUF_SIZE];
 	int len = strlen(message);
 
-	buf[0] = (len & 0xff000000) >> 24;
-	buf[1] = (len & 0x00ff0000) >> 16;
-	buf[2] = (len & 0x0000ff00) >> 8;
-	buf[3] = (len & 0x000000ff);
+	IntToChar(len, &buf[0]);
+	IntToChar(code, &buf[4]);
 
-	buf[4] = (code & 0xff000000) >> 24;
-	buf[5] = (code & 0x00ff0000) >> 16;
-	buf[6] = (code & 0x0000ff00) >> 8;
-	buf[7] = (code & 0x000000ff);
 	strcpy(&buf[8], message);
 
 	int writeLen = write(sock, buf, len + 8);
@@ -221,6 +236,8 @@ int sendCommand(int sock, int code, char * message)
 
 int readCommand(int sock, int * code, char * buf)
 {
+	int len;
+
 	if(buf == NULL)
 		return -1;
 
@@ -237,10 +254,7 @@ int readCommand(int sock, int * code, char * buf)
 	else if(readLen == 0)
 		return 0;
 
-	int len = (int)((buf[0] << 24) & 0xff000000);
-	len += (int)((buf[1] << 16) & 0x00ff0000);
-	len += (int)((buf[2] << 8) & 0x0000ff00);
-	len += buf[3];
+	CharToInt(&buf[0], &len);
 
 	readLen = read(sock, buf, 4);
 
@@ -252,10 +266,7 @@ int readCommand(int sock, int * code, char * buf)
 	if(readLen == -1)
 		return -1;
 
-	*code = (int)((buf[0] << 24) & 0xff000000);
-	*code += (int)((buf[1] << 16) & 0x00ff0000);
-	*code += (int)((buf[2] << 8) & 0x0000ff00);
-	*code += buf[3];
+	CharToInt(&buf[0], code);
 
 	read(sock, buf, len);
 	for(int i=0; i<len; i++)
@@ -304,4 +315,20 @@ int SeparateString(char * str, char(*arr)[BUF_SIZE], int arrLen, char flag)
 	}
 
 	return count;
+}
+
+void IntToChar(int value, char * result)
+{
+	result[0] = (value & 0xff000000) >> 24;
+	result[1] = (value & 0x00ff0000) >> 16;
+	result[2] = (value & 0x0000ff00) >> 8;
+	result[3] = (value & 0x000000ff);
+}
+
+void CharToInt(char * value, int * result)
+{
+	*result = (int)((value[0] << 24) & 0xff000000);
+	*result += (int)((value[1] << 16) & 0x00ff0000);
+	*result += (int)((value[2] << 8) & 0x0000ff00);
+	*result += value[3];
 }

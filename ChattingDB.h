@@ -37,5 +37,6 @@ MYSQL_RES * selectSql_chatting(int field);
 int insertSql_UserInfo(User user);
 int deleteSql_UserInfo(int sock);
 
+int updateUserMove(char * userName, int xpos, int ypos, char * field);
 
 #endif

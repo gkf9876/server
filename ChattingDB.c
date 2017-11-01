@@ -38,7 +38,7 @@ MYSQL_RES * selectSql_isUser(char * user)
 {
 	char query[255];
 
-	sprintf(query, "SELECT COUNT(A.ID) AS COUNT FROM USER_LIST A, (SELECT COUNT(NAME) AS COUNT FROM USERS WHERE NAME = '%s') B WHERE A.ID = '%s' AND B.COUNT = 0", user, user);
+	sprintf(query, "SELECT COUNT(ID) AS COUNT FROM USER_LIST WHERE ID = '%s' AND LOGIN = 0", user);
 
 	query_stat = mysql_query(connection, query);
 	if (query_stat != 0)
@@ -56,7 +56,7 @@ MYSQL_RES * selectSql_UserInfo(int number)
 {
 	char query[255];
 
-	sprintf(query, "SELECT NAME, XPOS, YPOS, FIELD FROM USERS WHERE SOCK = '%d'", number);
+	sprintf(query, "SELECT ID, XPOS, YPOS, FIELD FROM USER_LIST WHERE SOCK = '%d'", number);
 
 	query_stat = mysql_query(connection, query);
 	if (query_stat != 0)
@@ -124,8 +124,7 @@ int insertSql_UserInfo(User user)
 {
 	char query[255];
 
-	sprintf(query, "INSERT INTO USERS(SOCK, NAME, PASSWORD, XPOS, YPOS, FIELD) VALUES ('%d', '%s', '%s', '%d', '%d', '%d')"
-		, user.sock, user.name, user.password, user.xpos, user.ypos, user.field);
+	sprintf(query, "UPDATE USER_LIST SET SOCK = '%d', LOGIN = '1' WHERE ID = '%s'", user.sock, user.name);
 
 	query_stat = mysql_query(connection, query);
 
@@ -143,7 +142,25 @@ int deleteSql_UserInfo(int sock)
 {
 	char query[255];
 
-	sprintf(query, "delete from users where sock = '%d'", sock);
+	sprintf(query, "UPDATE USER_LIST SET LOGIN = '0' WHERE SOCK = '%d' AND LOGIN = '1'", sock);
+
+	query_stat = mysql_query(connection, query);
+
+	if (query_stat != 0)
+	{
+		fprintf(stderr, "Mysql insert query error : %s", mysql_error(&conn));
+		fprintf(stderr, "Sql : %s", query);
+		return -1;
+	}
+
+	return 1;
+}
+
+int updateUserMove(char * userName, int xpos, int ypos, char * field)
+{
+	char query[255];
+
+	sprintf(query, "UPDATE USER_LIST SET XPOS = '%d', YPOS = '%d', FIELD = '%s' WHERE ID = '%s' AND LOGIN = '1'", xpos, ypos, field, userName);
 
 	query_stat = mysql_query(connection, query);
 
