@@ -52,11 +52,11 @@ MYSQL_RES * selectSql_isUser(char * user)
 	return sql_result;
 }
 
-MYSQL_RES * selectSql_UserInfo(int number)
+MYSQL_RES * selectSql_UserInfo(int sock)
 {
 	char query[255];
 
-	sprintf(query, "SELECT ID, XPOS, YPOS, FIELD FROM USER_LIST WHERE SOCK = '%d'", number);
+	sprintf(query, "SELECT ID, XPOS, YPOS, FIELD FROM USER_LIST WHERE SOCK = '%d'", sock);
 
 	query_stat = mysql_query(connection, query);
 	if (query_stat != 0)
@@ -102,11 +102,11 @@ int updateSql_chatting(int field)
 {
 }
 
-MYSQL_RES * selectSql_chatting(int field)
+MYSQL_RES * selectSql_chatting(char * userName)
 {
 	char query[255];
 
-	sprintf(query, "SELECT SOCK, NAME, XPOS, YPOS, FIELD FROM USERS WHERE FIELD = '%d'", field);
+	sprintf(query, "SELECT A.SOCK, A.ID, A.XPOS, A.YPOS, A.FIELD FROM USER_LIST A, (SELECT * FROM USER_LIST WHERE ID = '%s') B WHERE A.FIELD = B.FIELD", userName);
 
 	query_stat = mysql_query(connection, query);
 	if (query_stat != 0)
@@ -142,7 +142,7 @@ int deleteSql_UserInfo(int sock)
 {
 	char query[255];
 
-	sprintf(query, "UPDATE USER_LIST SET LOGIN = '0' WHERE SOCK = '%d' AND LOGIN = '1'", sock);
+	sprintf(query, "UPDATE USER_LIST SET LOGIN = '0', SOCK = '0' WHERE SOCK = '%d' AND LOGIN = '1'", sock);
 
 	query_stat = mysql_query(connection, query);
 

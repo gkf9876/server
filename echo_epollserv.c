@@ -7,7 +7,7 @@
 #include <sys/epoll.h>
 #include "ChattingDB.h"
 
-#define BUF_SIZE 100
+#define BUF_SIZE 1024
 #define EPOLL_SIZE 50
 
 #define REQUEST_USER_INFO				1
@@ -121,7 +121,6 @@ int main(int argc, char * argv[])
 						sql_row = mysql_fetch_row(sql_result);
 
 						sprintf(sendBuf, "%s\n%s\n%s\n%s", sql_row[0], sql_row[1], sql_row[2], sql_row[3]);
-
 						str_len = sendCommand(ep_events[i].data.fd, code, sendBuf);
 
 						mysql_free_result(sql_result);
@@ -137,7 +136,7 @@ int main(int argc, char * argv[])
 
 						insertSql_chatting(0, name, content);
 
-						sql_result = selectSql_chatting(22);
+						sql_result = selectSql_chatting(name);
 
 						while ((sql_row = mysql_fetch_row(sql_result)) != NULL)
 						{
@@ -161,10 +160,7 @@ int main(int argc, char * argv[])
 							sprintf(userName, "%s", readBuf);
 							User user;
 							strcpy(user.name, userName);
-							user.sock = cInt_sock;
-							user.xpos = 33;
-							user.ypos = 77;
-							user.field = 22;
+							user.sock = ep_events[i].data.fd;
 							insertSql_UserInfo(user);
 						}
 						else

@@ -8,8 +8,8 @@
 #include <stdio.h>
 
 #define DB_HOST "127.0.0.1"
-#define DB_USER "root"
-#define DB_PASS "doeltms08"
+#define DB_USER "gkf9876"
+#define DB_PASS "9109382616@"
 #define DB_NAME "test"
 
 typedef struct user
@@ -27,12 +27,12 @@ int closeMySQL_chatting();
 
 MYSQL_RES * selectSql_isUser(char * user);
 
-MYSQL_RES * selectSql_UserInfo(int number);
+MYSQL_RES * selectSql_UserInfo(int sock);
 
 int insertSql_chatting(int field, char * name, char * content);
 int deleteSql_chatting(int field);
 int updateSql_chatting(int field);
-MYSQL_RES * selectSql_chatting(int field);
+MYSQL_RES * selectSql_chatting(char * userName);
 
 int insertSql_UserInfo(User user);
 int deleteSql_UserInfo(int sock);
