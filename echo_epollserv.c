@@ -14,6 +14,7 @@
 #define REQUEST_LOGIN					2
 #define CHATTING_PROCESS				3
 #define USER_MOVE_UPDATE				4
+#define OTHER_USER_MAP_MOVE				5
 
 void error_handling(char * message);
 int sendCommand(int sock, int code, char * message);
@@ -109,6 +110,29 @@ int main(int argc, char * argv[])
 					close(ep_events[i].data.fd);
 					printf("closed client : %d\n", ep_events[i].data.fd);
 
+					//종료하는 유저 아이디 불러옴.
+					sql_result = selectSql_User(ep_events[i].data.fd);
+					char imsiName[50];
+					int imsiXpos, imsiYpos;
+
+					while ((sql_row = mysql_fetch_row(sql_result)) != NULL)
+					{
+						strcpy(imsiName, sql_row[0]);
+						imsiXpos = atoi(sql_row[1]);
+						imsiYpos = atoi(sql_row[2]);
+					}
+					mysql_free_result(sql_result);
+
+					//종료시 해당 맵의 다른 유저들에게 자기정보를 보내준다.
+					sprintf(sendBuf, "out\n%s\n%d\n%d", imsiName, imsiXpos, imsiYpos);
+					sql_result = selectSql_fieldUsers(imsiName);
+
+					while ((sql_row = mysql_fetch_row(sql_result)) != NULL)
+					{
+						str_len = sendCommand(atoi(sql_row[0]), OTHER_USER_MAP_MOVE, sendBuf);
+					}
+					mysql_free_result(sql_result);
+
 					deleteSql_UserInfo(ep_events[i].data.fd);
 				}
 				else
@@ -162,6 +186,15 @@ int main(int argc, char * argv[])
 							strcpy(user.name, userName);
 							user.sock = ep_events[i].data.fd;
 							insertSql_UserInfo(user);
+
+							//접속시 해당 맵의 다른 유저들에게 자기정보를 보내준다.
+							sprintf(sendBuf, "in\n%s\n%d\n%d", user.name, user.xpos, user.ypos);
+							sql_result = selectSql_fieldUsers(user.name);
+
+							while ((sql_row = mysql_fetch_row(sql_result)) != NULL)
+							{
+								str_len = sendCommand(atoi(sql_row[0]), OTHER_USER_MAP_MOVE, sendBuf);
+							}
 						}
 						else
 							str_len = sendCommand(ep_events[i].data.fd, code, "login fail");
@@ -180,11 +213,14 @@ int main(int argc, char * argv[])
 						printf("userName : %s, xpos : %d, ypos : %d, field : %s\n", name, xpos, ypos, field);
 						str_len = sendCommand(ep_events[i].data.fd, code, "user move!!");
 						break;
+					case OTHER_USER_MAP_MOVE:
+						break;
 					default:
 						break;
 					}
 
 					memset(readBuf, 0, BUF_SIZE);
+					memset(sendBuf, 0, BUF_SIZE);
 				}
 			}
 		}

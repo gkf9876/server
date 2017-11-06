@@ -38,5 +38,7 @@ int insertSql_UserInfo(User user);
 int deleteSql_UserInfo(int sock);
 
 int updateUserMove(char * userName, int xpos, int ypos, char * field);
+MYSQL_RES * selectSql_fieldUsers(char * userName);
+MYSQL_RES * selectSql_User(int sock);
 
 #endif

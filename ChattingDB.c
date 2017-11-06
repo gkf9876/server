@@ -173,3 +173,39 @@ int updateUserMove(char * userName, int xpos, int ypos, char * field)
 
 	return 1;
 }
+
+MYSQL_RES * selectSql_fieldUsers(char * userName)
+{
+	char query[255];
+
+	sprintf(query, "SELECT A.SOCK, A.ID FROM USER_LIST A, (SELECT ID, FIELD FROM USER_LIST WHERE ID = '%s') B WHERE A.FIELD = B.FIELD AND A.ID <> B.ID", userName);
+
+	query_stat = mysql_query(connection, query);
+	if (query_stat != 0)
+	{
+		fprintf(stderr, "Mysql select query error : %s", mysql_error(&conn));
+		fprintf(stderr, "Sql : %s", query);
+	}
+
+	sql_result = mysql_store_result(connection);
+
+	return sql_result;
+}
+
+MYSQL_RES * selectSql_User(int sock)
+{
+	char query[255];
+
+	sprintf(query, "SELECT ID,XPOS,YPOS FROM USER_LIST WHERE SOCK = '%d'", sock);
+
+	query_stat = mysql_query(connection, query);
+	if (query_stat != 0)
+	{
+		fprintf(stderr, "Mysql select query error : %s", mysql_error(&conn));
+		fprintf(stderr, "Sql : %s", query);
+	}
+
+	sql_result = mysql_store_result(connection);
+
+	return sql_result;
+}
