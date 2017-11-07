@@ -1,4 +1,4 @@
-#ifndef __CHATTING_DB_H_
+﻿#ifndef __CHATTING_DB_H_
 #define __CHATTING_DB_H_
 
 

@@ -1,4 +1,4 @@
-#include <stdio.h>
+ï»¿#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
@@ -110,7 +110,7 @@ int main(int argc, char * argv[])
 					close(ep_events[i].data.fd);
 					printf("closed client : %d\n", ep_events[i].data.fd);
 
-					//Á¾·áÇÏ´Â À¯Àú ¾ÆÀÌµğ ºÒ·¯¿È.
+					//ì¢…ë£Œí•˜ëŠ” ìœ ì € ì•„ì´ë”” ë¶ˆëŸ¬ì˜´.
 					sql_result = selectSql_User(ep_events[i].data.fd);
 					char imsiName[50];
 					int imsiXpos, imsiYpos;
@@ -123,7 +123,7 @@ int main(int argc, char * argv[])
 					}
 					mysql_free_result(sql_result);
 
-					//Á¾·á½Ã ÇØ´ç ¸ÊÀÇ ´Ù¸¥ À¯Àúµé¿¡°Ô ÀÚ±âÁ¤º¸¸¦ º¸³»ÁØ´Ù.
+					//ì¢…ë£Œì‹œ í•´ë‹¹ ë§µì˜ ë‹¤ë¥¸ ìœ ì €ë“¤ì—ê²Œ ìê¸°ì •ë³´ë¥¼ ë³´ë‚´ì¤€ë‹¤.
 					sprintf(sendBuf, "out\n%s\n%d\n%d", imsiName, imsiXpos, imsiYpos);
 					sql_result = selectSql_fieldUsers(imsiName);
 
@@ -139,7 +139,7 @@ int main(int argc, char * argv[])
 				{
 					switch(code)
 					{
-					case REQUEST_USER_INFO:			//À¯Àú Á¤º¸ ¿äÃ»½Ã
+					case REQUEST_USER_INFO:			//ìœ ì € ì •ë³´ ìš”ì²­ì‹œ
 						printf("code : %d, content : %s\n", code, readBuf);
 						sql_result = selectSql_UserInfo(ep_events[i].data.fd);
 						sql_row = mysql_fetch_row(sql_result);
@@ -149,7 +149,7 @@ int main(int argc, char * argv[])
 
 						mysql_free_result(sql_result);
 						break;
-					case CHATTING_PROCESS:			//Ã¤ÆÃ½Ã
+					case CHATTING_PROCESS:			//ì±„íŒ…ì‹œ
 						printf("code : %d, content : %s\n", code, readBuf);
 
 						char chattingInfo[2][BUF_SIZE];
@@ -169,7 +169,7 @@ int main(int argc, char * argv[])
 						mysql_free_result(sql_result);
 
 						break;
-					case REQUEST_LOGIN:				//·Î±×ÀÎ ½ÂÀÎ½Ã
+					case REQUEST_LOGIN:				//ë¡œê·¸ì¸ ìŠ¹ì¸ì‹œ
 						printf("code : %d, content : %s\n", code, readBuf);
 						sql_result = selectSql_isUser(readBuf);
 						sql_row = mysql_fetch_row(sql_result);
@@ -180,13 +180,13 @@ int main(int argc, char * argv[])
 						{
 							str_len = sendCommand(ep_events[i].data.fd, code, "login okey");
 
-							//·Î±×ÀÎ»óÅÂ¸¦ ¹Ù²Û´Ù.
+							//ë¡œê·¸ì¸ìƒíƒœë¥¼ ë°”ê¾¼ë‹¤.
 							User user;
 							strcpy(user.name, readBuf);
 							user.sock = ep_events[i].data.fd;
 							insertSql_UserInfo(user);
 
-							//ÇØ´ç À¯ÀúÀÇ Á¤º¸¸¦ °¡Á®¿Â´Ù.
+							//í•´ë‹¹ ìœ ì €ì˜ ì •ë³´ë¥¼ ê°€ì ¸ì˜¨ë‹¤.
 							sql_result = selectSql_UserInfo(ep_events[i].data.fd);
 							sql_row = mysql_fetch_row(sql_result);
 
@@ -196,7 +196,7 @@ int main(int argc, char * argv[])
 
 							printf("NEW User IN!! (name : %s xpos : %d, ypos : %d)\n", user.name, user.xpos, user.ypos);
 
-							//Á¢¼Ó½Ã ÇØ´ç ¸ÊÀÇ ´Ù¸¥ À¯Àúµé¿¡°Ô ÀÚ±âÁ¤º¸¸¦ º¸³»ÁØ´Ù.
+							//ì ‘ì†ì‹œ í•´ë‹¹ ë§µì˜ ë‹¤ë¥¸ ìœ ì €ë“¤ì—ê²Œ ìê¸°ì •ë³´ë¥¼ ë³´ë‚´ì¤€ë‹¤.
 							sprintf(sendBuf, "in\n%s\n%d\n%d", user.name, user.xpos, user.ypos);
 							sql_result = selectSql_fieldUsers(user.name);
 
@@ -223,10 +223,10 @@ int main(int argc, char * argv[])
 
 						printf("%s -> %s(%d, %d), %s(%d, %d)\n", name, fromMap, regionXpos, regionYpos, field, xpos, ypos);
 
-						//Á¢¼Ó½Ã ÇØ´ç ¸ÊÀÇ ´Ù¸¥ À¯Àúµé¿¡°Ô ÀÚ±âÁ¤º¸¸¦ º¸³»ÁØ´Ù.
+						//ì ‘ì†ì‹œ í•´ë‹¹ ë§µì˜ ë‹¤ë¥¸ ìœ ì €ë“¤ì—ê²Œ ìê¸°ì •ë³´ë¥¼ ë³´ë‚´ì¤€ë‹¤.
 						if (strcmp(fromMap, field))
 						{
-							//¸Ê¿¡¼­ ³ª°¥¶§ ³ª°¡±âÀü¿¡ ´Ù¸¥ À¯ÀúµéÇÑÅ× º¸³¿.
+							//ë§µì—ì„œ ë‚˜ê°ˆë•Œ ë‚˜ê°€ê¸°ì „ì— ë‹¤ë¥¸ ìœ ì €ë“¤í•œí…Œ ë³´ëƒ„.
 							sprintf(sendBuf, "out\n%s\n%d\n%d", name, regionXpos, regionYpos);
 							sql_result = selectSql_fieldUsers(name);
 
@@ -238,7 +238,7 @@ int main(int argc, char * argv[])
 							mysql_free_result(sql_result);
 							updateUserMove(name, xpos, ypos, field);
 
-							//¸Ê¿¡¼­ ³ª°¡°í ³ª¼­ ´Ù¸¥ ¸Ê¿¡ ÁøÀÔÇÒ¶§ ´Ù¸¥ À¯ÀúµéÇÑÅ× º¸³¿.
+							//ë§µì—ì„œ ë‚˜ê°€ê³  ë‚˜ì„œ ë‹¤ë¥¸ ë§µì— ì§„ì…í• ë•Œ ë‹¤ë¥¸ ìœ ì €ë“¤í•œí…Œ ë³´ëƒ„.
 							sprintf(sendBuf, "in\n%s\n%d\n%d", name, xpos, ypos);
 							sql_result = selectSql_fieldUsers(name);
 
@@ -251,7 +251,7 @@ int main(int argc, char * argv[])
 						}
 						else
 						{
-							//ÇöÀç ¸Ê¿¡¼­ ÀÌµ¿ÇÒ¶§.
+							//í˜„ì¬ ë§µì—ì„œ ì´ë™í• ë•Œ.
 							updateUserMove(name, xpos, ypos, field);
 							sprintf(sendBuf, "move\n%s\n%d\n%d", name, xpos, ypos);
 							sql_result = selectSql_fieldUsers(name);
