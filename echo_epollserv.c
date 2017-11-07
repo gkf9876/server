@@ -36,7 +36,7 @@ int main(int argc, char * argv[])
 	char name[50];
 	char content[100];
 
-	char userMoveInfo[4][BUF_SIZE];
+	char userMoveInfo[20][BUF_SIZE];
 	int len;
 	int xpos;
 	int ypos;
@@ -180,12 +180,21 @@ int main(int argc, char * argv[])
 						{
 							str_len = sendCommand(ep_events[i].data.fd, code, "login okey");
 
-							char userName[50];
-							sprintf(userName, "%s", readBuf);
+							//로그인상태를 바꾼다.
 							User user;
-							strcpy(user.name, userName);
+							strcpy(user.name, readBuf);
 							user.sock = ep_events[i].data.fd;
 							insertSql_UserInfo(user);
+
+							//해당 유저의 정보를 가져온다.
+							sql_result = selectSql_UserInfo(ep_events[i].data.fd);
+							sql_row = mysql_fetch_row(sql_result);
+
+							user.xpos = atoi(sql_row[1]);
+							user.ypos = atoi(sql_row[2]);
+							strcpy(user.field, sql_row[3]);
+
+							printf("NEW User IN!! (name : %s xpos : %d, ypos : %d)\n", user.name, user.xpos, user.ypos);
 
 							//접속시 해당 맵의 다른 유저들에게 자기정보를 보내준다.
 							sprintf(sendBuf, "in\n%s\n%d\n%d", user.name, user.xpos, user.ypos);
@@ -203,15 +212,57 @@ int main(int argc, char * argv[])
 						break;
 					case USER_MOVE_UPDATE:
 						len = SeparateString(readBuf, userMoveInfo, sizeof(userMoveInfo) / BUF_SIZE, '\n');
-
+						char fromMap[100];
 						strcpy(name, userMoveInfo[0]);
-						xpos = atoi(userMoveInfo[1]);
-						ypos = atoi(userMoveInfo[2]);
-						strcpy(field, userMoveInfo[3]);
-						updateUserMove(name, xpos, ypos, field);
+						int regionXpos = atoi(userMoveInfo[1]);
+						int regionYpos = atoi(userMoveInfo[2]);
+						strcpy(fromMap, userMoveInfo[3]);
+						xpos = atoi(userMoveInfo[4]);
+						ypos = atoi(userMoveInfo[5]);
+						strcpy(field, userMoveInfo[6]);
 
-						printf("userName : %s, xpos : %d, ypos : %d, field : %s\n", name, xpos, ypos, field);
-						str_len = sendCommand(ep_events[i].data.fd, code, "user move!!");
+						printf("%s -> %s(%d, %d), %s(%d, %d)\n", name, fromMap, regionXpos, regionYpos, field, xpos, ypos);
+
+						//접속시 해당 맵의 다른 유저들에게 자기정보를 보내준다.
+						if (strcmp(fromMap, field))
+						{
+							//맵에서 나갈때 나가기전에 다른 유저들한테 보냄.
+							sprintf(sendBuf, "out\n%s\n%d\n%d", name, regionXpos, regionYpos);
+							sql_result = selectSql_fieldUsers(name);
+
+							while ((sql_row = mysql_fetch_row(sql_result)) != NULL)
+							{
+								str_len = sendCommand(atoi(sql_row[0]), OTHER_USER_MAP_MOVE, sendBuf);
+								printf("userName : %s, xpos : %d, ypos : %d, field : %s\n", name, xpos, ypos, field);
+							}
+							mysql_free_result(sql_result);
+							updateUserMove(name, xpos, ypos, field);
+
+							//맵에서 나가고 나서 다른 맵에 진입할때 다른 유저들한테 보냄.
+							sprintf(sendBuf, "in\n%s\n%d\n%d", name, xpos, ypos);
+							sql_result = selectSql_fieldUsers(name);
+
+							while ((sql_row = mysql_fetch_row(sql_result)) != NULL)
+							{
+								str_len = sendCommand(atoi(sql_row[0]), OTHER_USER_MAP_MOVE, sendBuf);
+								printf("userName : %s, xpos : %d, ypos : %d, field : %s\n", name, xpos, ypos, field);
+							}
+							mysql_free_result(sql_result);
+						}
+						else
+						{
+							//현재 맵에서 이동할때.
+							updateUserMove(name, xpos, ypos, field);
+							sprintf(sendBuf, "move\n%s\n%d\n%d", name, xpos, ypos);
+							sql_result = selectSql_fieldUsers(name);
+
+							while ((sql_row = mysql_fetch_row(sql_result)) != NULL)
+							{
+								str_len = sendCommand(atoi(sql_row[0]), OTHER_USER_MAP_MOVE, sendBuf);
+								printf("userName : %s, xpos : %d, ypos : %d, field : %s\n", name, xpos, ypos, field);
+							}
+							mysql_free_result(sql_result);
+						}
 						break;
 					case OTHER_USER_MAP_MOVE:
 						break;
@@ -253,12 +304,12 @@ int sendCommand(int sock, int code, char * message)
 
 	int writeLen = write(sock, buf, len + 8);
 
-	printf("Send Message : ");
-	for(int i=0; i<len + 8; i++)
-	{
-		printf("%d ", buf[i]);
-	}
-	printf("\n");
+	//printf("Send Message : ");
+	//for(int i=0; i<len + 8; i++)
+	//{
+	//	printf("%d ", buf[i]);
+	//}
+	//printf("\n");
 
 	if(writeLen == -1)
 		return -1;
@@ -275,11 +326,11 @@ int readCommand(int sock, int * code, char * buf)
 
 	int readLen = read(sock, buf, 4);
 
-	printf("Read Message : ");
-	for(int i=0; i<4; i++)
-	{
-		printf("%d ", buf[i]);
-	}
+	//printf("Read Message : ");
+	//for(int i=0; i<4; i++)
+	//{
+	//	printf("%d ", buf[i]);
+	//}
 
 	if(readLen == -1)
 		return -1;
@@ -290,10 +341,10 @@ int readCommand(int sock, int * code, char * buf)
 
 	readLen = read(sock, buf, 4);
 
-	for(int i=0; i<4; i++)
-	{
-		printf("%d ", buf[i]);
-	}
+	//for(int i=0; i<4; i++)
+	//{
+	//	printf("%d ", buf[i]);
+	//}
 
 	if(readLen == -1)
 		return -1;
@@ -301,11 +352,11 @@ int readCommand(int sock, int * code, char * buf)
 	CharToInt(&buf[0], code);
 
 	read(sock, buf, len);
-	for(int i=0; i<len; i++)
-	{
-		printf("%d ", buf[i]);
-	}
-	printf("\n");
+	//for(int i=0; i<len; i++)
+	//{
+	//	printf("%d ", buf[i]);
+	//}
+	//printf("\n");
 	buf[len] = 0;
 
 	return len;
@@ -359,8 +410,8 @@ void IntToChar(int value, char * result)
 
 void CharToInt(char * value, int * result)
 {
-	*result = (int)((value[0] << 24) & 0xff000000);
-	*result += (int)((value[1] << 16) & 0x00ff0000);
-	*result += (int)((value[2] << 8) & 0x0000ff00);
-	*result += value[3];
+	*result = (int)(((unsigned char)value[0] << 24) & 0xff000000);
+	*result += (int)(((unsigned char)value[1] << 16) & 0x00ff0000);
+	*result += (int)(((unsigned char)value[2] << 8) & 0x0000ff00);
+	*result += (unsigned char)value[3];
 }

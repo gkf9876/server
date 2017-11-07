@@ -19,14 +19,13 @@ typedef struct user
 	char password[50];
 	int xpos;
 	int ypos;
-	int field;
+	char field[100];
 }User;
 
 int openMySQL_chatting();
 int closeMySQL_chatting();
 
 MYSQL_RES * selectSql_isUser(char * user);
-
 MYSQL_RES * selectSql_UserInfo(int sock);
 
 int insertSql_chatting(int field, char * name, char * content);
