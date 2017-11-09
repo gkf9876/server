@@ -200,9 +200,15 @@ int main(int argc, char * argv[])
 							sprintf(sendBuf, "in\n%s\n%d\n%d", user.name, user.xpos, user.ypos);
 							sql_result = selectSql_fieldUsers(user.name);
 
+							char imsiSendBuf[BUF_SIZE];
+
 							while ((sql_row = mysql_fetch_row(sql_result)) != NULL)
 							{
 								str_len = sendCommand(atoi(sql_row[0]), OTHER_USER_MAP_MOVE, sendBuf);
+
+								//같은맵의 다른 유저 정보를 전해준다.
+								sprintf(imsiSendBuf, "in\n%s\n%s\n%s", sql_row[1], sql_row[2], sql_row[3]);
+								sendCommand(ep_events[i].data.fd, OTHER_USER_MAP_MOVE, imsiSendBuf);
 							}
 						}
 						else
@@ -211,6 +217,7 @@ int main(int argc, char * argv[])
 						mysql_free_result(sql_result);
 						break;
 					case USER_MOVE_UPDATE:
+						//이동한 유저 정보 가져옴
 						len = SeparateString(readBuf, userMoveInfo, sizeof(userMoveInfo) / BUF_SIZE, '\n');
 						char fromMap[100];
 						strcpy(name, userMoveInfo[0]);
@@ -221,7 +228,7 @@ int main(int argc, char * argv[])
 						ypos = atoi(userMoveInfo[5]);
 						strcpy(field, userMoveInfo[6]);
 
-						printf("%s -> %s(%d, %d), %s(%d, %d)\n", name, fromMap, regionXpos, regionYpos, field, xpos, ypos);
+						//printf("%s -> %s(%d, %d), %s(%d, %d)\n", name, fromMap, regionXpos, regionYpos, field, xpos, ypos);
 
 						//접속시 해당 맵의 다른 유저들에게 자기정보를 보내준다.
 						if (strcmp(fromMap, field))
@@ -242,10 +249,16 @@ int main(int argc, char * argv[])
 							sprintf(sendBuf, "in\n%s\n%d\n%d", name, xpos, ypos);
 							sql_result = selectSql_fieldUsers(name);
 
+							char imsiSendBuf[BUF_SIZE];
+
 							while ((sql_row = mysql_fetch_row(sql_result)) != NULL)
 							{
 								str_len = sendCommand(atoi(sql_row[0]), OTHER_USER_MAP_MOVE, sendBuf);
 								printf("userName : %s, xpos : %d, ypos : %d, field : %s\n", name, xpos, ypos, field);
+
+								//이동한 맵의 유저들 정보를 알려준다.
+								sprintf(imsiSendBuf, "in\n%s\n%s\n%s", sql_row[1], sql_row[2], sql_row[3]);
+								sendCommand(ep_events[i].data.fd, OTHER_USER_MAP_MOVE, imsiSendBuf);
 							}
 							mysql_free_result(sql_result);
 						}
@@ -262,7 +275,7 @@ int main(int argc, char * argv[])
 								printf("userName : %s, xpos : %d, ypos : %d, field : %s\n", name, xpos, ypos, field);
 							}
 							mysql_free_result(sql_result);
-						}
+						} 
 						break;
 					case OTHER_USER_MAP_MOVE:
 						break;

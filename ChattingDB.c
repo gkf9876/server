@@ -178,7 +178,7 @@ MYSQL_RES * selectSql_fieldUsers(char * userName)
 {
 	char query[255];
 
-	sprintf(query, "SELECT A.SOCK, A.ID FROM USER_LIST A, (SELECT ID, FIELD FROM USER_LIST WHERE ID = '%s') B WHERE A.FIELD = B.FIELD AND A.ID <> B.ID", userName);
+	sprintf(query, "SELECT A.SOCK, A.ID, A.XPOS, A.YPOS FROM USER_LIST A, (SELECT ID, FIELD FROM USER_LIST WHERE ID = '%s') B WHERE A.FIELD = B.FIELD AND A.ID <> B.ID AND A.LOGIN = 1", userName);
 
 	query_stat = mysql_query(connection, query);
 	if (query_stat != 0)
