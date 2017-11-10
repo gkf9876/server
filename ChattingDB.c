@@ -38,7 +38,7 @@ MYSQL_RES * selectSql_isUser(char * user)
 {
 	char query[255];
 
-	sprintf(query, "SELECT COUNT(ID) AS COUNT FROM USER_LIST WHERE ID = '%s' AND LOGIN = 0", user);
+	sprintf(query, "SELECT COUNT(ID) AS COUNT FROM USER_LIST WHERE ID = BINARY('%s') AND LOGIN = 0", user);
 
 	query_stat = mysql_query(connection, query);
 	if (query_stat != 0)
@@ -106,7 +106,7 @@ MYSQL_RES * selectSql_chatting(char * userName)
 {
 	char query[255];
 
-	sprintf(query, "SELECT A.SOCK, A.ID, A.XPOS, A.YPOS, A.FIELD FROM USER_LIST A, (SELECT * FROM USER_LIST WHERE ID = '%s') B WHERE A.FIELD = B.FIELD", userName);
+	sprintf(query, "SELECT A.SOCK, A.ID, A.XPOS, A.YPOS, A.FIELD FROM USER_LIST A, (SELECT * FROM USER_LIST WHERE ID = BINARY('%s')) B WHERE A.FIELD = B.FIELD", userName);
 
 	query_stat = mysql_query(connection, query);
 	if (query_stat != 0)
@@ -124,7 +124,7 @@ int insertSql_UserInfo(User user)
 {
 	char query[255];
 
-	sprintf(query, "UPDATE USER_LIST SET SOCK = '%d', LOGIN = '1' WHERE ID = '%s'", user.sock, user.name);
+	sprintf(query, "UPDATE USER_LIST SET SOCK = '%d', LOGIN = '1' WHERE ID = BINARY('%s')", user.sock, user.name);
 
 	query_stat = mysql_query(connection, query);
 
@@ -160,7 +160,7 @@ int updateUserMove(char * userName, int xpos, int ypos, char * field)
 {
 	char query[255];
 
-	sprintf(query, "UPDATE USER_LIST SET XPOS = '%d', YPOS = '%d', FIELD = '%s' WHERE ID = '%s' AND LOGIN = '1'", xpos, ypos, field, userName);
+	sprintf(query, "UPDATE USER_LIST SET XPOS = '%d', YPOS = '%d', FIELD = '%s' WHERE ID = BINARY('%s') AND LOGIN = '1'", xpos, ypos, field, userName);
 
 	query_stat = mysql_query(connection, query);
 
@@ -178,7 +178,7 @@ MYSQL_RES * selectSql_fieldUsers(char * userName)
 {
 	char query[255];
 
-	sprintf(query, "SELECT A.SOCK, A.ID, A.XPOS, A.YPOS FROM USER_LIST A, (SELECT ID, FIELD FROM USER_LIST WHERE ID = '%s') B WHERE A.FIELD = B.FIELD AND A.ID <> B.ID AND A.LOGIN = 1", userName);
+	sprintf(query, "SELECT A.SOCK, A.ID, A.XPOS, A.YPOS FROM USER_LIST A, (SELECT ID, FIELD FROM USER_LIST WHERE ID = BINARY('%s')) B WHERE A.FIELD = B.FIELD AND A.ID <> B.ID AND A.LOGIN = 1", userName);
 
 	query_stat = mysql_query(connection, query);
 	if (query_stat != 0)
