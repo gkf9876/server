@@ -144,7 +144,7 @@ int main(int argc, char * argv[])
 						sql_result = selectSql_UserInfo(ep_events[i].data.fd);
 						sql_row = mysql_fetch_row(sql_result);
 
-						sprintf(sendBuf, "%s\n%s\n%s\n%s", sql_row[0], sql_row[1], sql_row[2], sql_row[3]);
+						sprintf(sendBuf, "%s\n%s\n%s\n%s\n%s", sql_row[0], sql_row[1], sql_row[2], sql_row[3], sql_row[4]);
 						str_len = sendCommand(ep_events[i].data.fd, code, sendBuf);
 
 						mysql_free_result(sql_result);
@@ -193,11 +193,12 @@ int main(int argc, char * argv[])
 							user.xpos = atoi(sql_row[1]);
 							user.ypos = atoi(sql_row[2]);
 							strcpy(user.field, sql_row[3]);
+							user.seeDirection = atoi(sql_row[4]);
 
 							printf("NEW User IN!! (name : %s xpos : %d, ypos : %d)\n", user.name, user.xpos, user.ypos);
 
 							//접속시 해당 맵의 다른 유저들에게 자기정보를 보내준다.
-							sprintf(sendBuf, "in\n%s\n%d\n%d", user.name, user.xpos, user.ypos);
+							sprintf(sendBuf, "in\n%s\n%d\n%d\n%d", user.name, user.xpos, user.ypos, user.seeDirection);
 							sql_result = selectSql_fieldUsers(user.name);
 
 							char imsiSendBuf[BUF_SIZE];
@@ -207,7 +208,7 @@ int main(int argc, char * argv[])
 								str_len = sendCommand(atoi(sql_row[0]), OTHER_USER_MAP_MOVE, sendBuf);
 
 								//같은맵의 다른 유저 정보를 전해준다.
-								sprintf(imsiSendBuf, "in\n%s\n%s\n%s", sql_row[1], sql_row[2], sql_row[3]);
+								sprintf(imsiSendBuf, "in\n%s\n%s\n%s\n%s", sql_row[1], sql_row[2], sql_row[3], sql_row[4]);
 								sendCommand(ep_events[i].data.fd, OTHER_USER_MAP_MOVE, imsiSendBuf);
 							}
 						}
@@ -227,6 +228,7 @@ int main(int argc, char * argv[])
 						xpos = atoi(userMoveInfo[4]);
 						ypos = atoi(userMoveInfo[5]);
 						strcpy(field, userMoveInfo[6]);
+						int seeDirection = atoi(userMoveInfo[7]);
 
 						//printf("%s -> %s(%d, %d), %s(%d, %d)\n", name, fromMap, regionXpos, regionYpos, field, xpos, ypos);
 
@@ -243,7 +245,7 @@ int main(int argc, char * argv[])
 								printf("userName : %s, xpos : %d, ypos : %d, field : %s\n", name, xpos, ypos, field);
 							}
 							mysql_free_result(sql_result);
-							updateUserMove(name, xpos, ypos, field);
+							updateUserMove(name, xpos, ypos, field, seeDirection);
 
 							//맵에서 나가고 나서 다른 맵에 진입할때 다른 유저들한테 보냄.
 							sprintf(sendBuf, "in\n%s\n%d\n%d", name, xpos, ypos);
@@ -265,8 +267,8 @@ int main(int argc, char * argv[])
 						else
 						{
 							//현재 맵에서 이동할때.
-							updateUserMove(name, xpos, ypos, field);
-							sprintf(sendBuf, "move\n%s\n%d\n%d", name, xpos, ypos);
+							updateUserMove(name, xpos, ypos, field, seeDirection);
+							sprintf(sendBuf, "move\n%s\n%d\n%d\n%d", name, xpos, ypos, seeDirection);
 							sql_result = selectSql_fieldUsers(name);
 
 							while ((sql_row = mysql_fetch_row(sql_result)) != NULL)

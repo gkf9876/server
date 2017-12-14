@@ -20,6 +20,7 @@ typedef struct user
 	int xpos;
 	int ypos;
 	char field[100];
+	int seeDirection;
 }User;
 
 int openMySQL_chatting();
@@ -36,7 +37,7 @@ MYSQL_RES * selectSql_chatting(char * userName);
 int insertSql_UserInfo(User user);
 int deleteSql_UserInfo(int sock);
 
-int updateUserMove(char * userName, int xpos, int ypos, char * field);
+int updateUserMove(char * userName, int xpos, int ypos, char * field, int seeDirection);
 MYSQL_RES * selectSql_fieldUsers(char * userName);
 MYSQL_RES * selectSql_User(int sock);
 

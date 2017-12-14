@@ -56,7 +56,7 @@ MYSQL_RES * selectSql_UserInfo(int sock)
 {
 	char query[255];
 
-	sprintf(query, "SELECT ID, XPOS, YPOS, FIELD FROM USER_LIST WHERE SOCK = '%d'", sock);
+	sprintf(query, "SELECT ID, XPOS, YPOS, FIELD, SEEDIRECTION FROM USER_LIST WHERE SOCK = '%d'", sock);
 
 	query_stat = mysql_query(connection, query);
 	if (query_stat != 0)
@@ -156,11 +156,11 @@ int deleteSql_UserInfo(int sock)
 	return 1;
 }
 
-int updateUserMove(char * userName, int xpos, int ypos, char * field)
+int updateUserMove(char * userName, int xpos, int ypos, char * field, int seeDirection)
 {
 	char query[255];
 
-	sprintf(query, "UPDATE USER_LIST SET XPOS = '%d', YPOS = '%d', FIELD = '%s' WHERE ID = BINARY('%s') AND LOGIN = '1'", xpos, ypos, field, userName);
+	sprintf(query, "UPDATE USER_LIST SET XPOS = '%d', YPOS = '%d', FIELD = '%s', SEEDIRECTION = '%d' WHERE ID = BINARY('%s') AND LOGIN = '1'", xpos, ypos, field, seeDirection, userName);
 
 	query_stat = mysql_query(connection, query);
 
@@ -178,7 +178,7 @@ MYSQL_RES * selectSql_fieldUsers(char * userName)
 {
 	char query[255];
 
-	sprintf(query, "SELECT A.SOCK, A.ID, A.XPOS, A.YPOS FROM USER_LIST A, (SELECT ID, FIELD FROM USER_LIST WHERE ID = BINARY('%s')) B WHERE A.FIELD = B.FIELD AND A.ID <> B.ID AND A.LOGIN = 1", userName);
+	sprintf(query, "SELECT A.SOCK, A.ID, A.XPOS, A.YPOS, A.SEEDIRECTION FROM USER_LIST A, (SELECT ID, FIELD FROM USER_LIST WHERE ID = BINARY('%s')) B WHERE A.FIELD = B.FIELD AND A.ID <> B.ID AND A.LOGIN = 1", userName);
 
 	query_stat = mysql_query(connection, query);
 	if (query_stat != 0)
