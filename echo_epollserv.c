@@ -41,6 +41,7 @@ int main(int argc, char * argv[])
 	int xpos;
 	int ypos;
 	char field[100];
+	int dateCount = 0;
 
 	MYSQL_RES   	*sql_result;
 	MYSQL_ROW   	sql_row;
@@ -81,7 +82,14 @@ int main(int argc, char * argv[])
 
 	while(1)
 	{
-		event_cnt = epoll_wait(epfd, ep_events, EPOLL_SIZE, -1);
+		event_cnt = epoll_wait(epfd, ep_events, EPOLL_SIZE, 10);
+
+		//1초마다 DB시간 업데이트
+		if (dateCount++ >= 100)
+		{
+			if (updateDate(1) == -1)
+				error_handling("error Database Date!!");
+		}
 
 		if(event_cnt == -1)
 		{

@@ -41,4 +41,6 @@ int updateUserMove(char * userName, int xpos, int ypos, char * field, int seeDir
 MYSQL_RES * selectSql_fieldUsers(char * userName);
 MYSQL_RES * selectSql_User(int sock);
 
+int updateDate(int idx);
+
 #endif

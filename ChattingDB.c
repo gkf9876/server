@@ -209,3 +209,21 @@ MYSQL_RES * selectSql_User(int sock)
 
 	return sql_result;
 }
+
+int updateDate(int idx)
+{
+	char query[255];
+
+	sprintf(query, "UPDATE SERVER_INFO SET INPUTDATE = SYSDATE() WHERE IDX = '%d'", idx);
+
+	query_stat = mysql_query(connection, query);
+
+	if (query_stat != 0)
+	{
+		fprintf(stderr, "Mysql insert query error : %s", mysql_error(&conn));
+		fprintf(stderr, "Sql : %s", query);
+		return -1;
+	}
+
+	return 1;
+}
