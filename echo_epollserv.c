@@ -90,6 +90,7 @@ int main(int argc, char * argv[])
 		{
 			if (updateDate(1) == -1)
 				error_handling("error Database Date!!");
+			dateCount = 0;
 		}
 
 		if(event_cnt == -1)
