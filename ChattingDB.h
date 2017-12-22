@@ -5,6 +5,7 @@
 
 #include "mysql/mysql.h"
 #include <string.h>
+#include <stdlib.h>
 #include <stdio.h>
 
 #define DB_HOST "127.0.0.1"
@@ -42,5 +43,7 @@ MYSQL_RES * selectSql_fieldUsers(char * userName);
 MYSQL_RES * selectSql_User(int sock);
 
 int updateDate(int idx);
+
+int insertUserInfo(char * userName);
 
 #endif

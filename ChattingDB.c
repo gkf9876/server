@@ -227,3 +227,36 @@ int updateDate(int idx)
 
 	return 1;
 }
+
+int insertUserInfo(char * userName)
+{
+	char query[255];
+
+	//중복되는 아이디인지 확인
+	sprintf(query, "SELECT count(ID) FROM USER_LIST WHERE ID = '%s'", userName);
+	query_stat = mysql_query(connection, query);
+	sql_result = mysql_store_result(connection);
+
+	while ((sql_row = mysql_fetch_row(sql_result)) != NULL)
+	{
+		if (atoi(sql_row[0]) > 0)
+		{
+			printf("중복되는 아이디입니다.\n");
+			return -1;
+		}
+	}
+
+	//아이디 등록
+	sprintf(query, "INSERT INTO USER_LIST(ID, XPOS, YPOS, FIELD, SEEDIRECTION) VALUE('%s', '18', '11', 'TileMaps/KonyangUniv.Daejeon/JukhunDigitalFacilitie/floor_08/floor.tmx', '29')", userName);
+
+	query_stat = mysql_query(connection, query);
+
+	if (query_stat != 0)
+	{
+		fprintf(stderr, "Mysql insert query error : %s", mysql_error(&conn));
+		fprintf(stderr, "Sql : %s", query);
+		return -1;
+	}
+
+	return 1;
+}

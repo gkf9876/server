@@ -15,6 +15,7 @@
 #define CHATTING_PROCESS				3
 #define USER_MOVE_UPDATE				4
 #define OTHER_USER_MAP_MOVE				5
+#define REQUEST_JOIN					6
 
 void error_handling(char * message);
 int sendCommand(int sock, int code, char * message);
@@ -288,6 +289,21 @@ int main(int argc, char * argv[])
 						} 
 						break;
 					case OTHER_USER_MAP_MOVE:
+						break;
+					case REQUEST_JOIN:			//유저 회원가입시
+						printf("code : %d, content : %s\n", code, readBuf);
+						int result = insertUserInfo(readBuf);
+
+						if (result == -1)
+						{
+							printf("중복된 아이디입니다.\n");
+							sendCommand(ep_events[i].data.fd, code, "join disapprove");
+						}
+						else
+						{
+							printf("생성되었습니다.\n");
+							sendCommand(ep_events[i].data.fd, code, "join okey");
+						}
 						break;
 					default:
 						break;
