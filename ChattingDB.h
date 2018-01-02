@@ -35,7 +35,7 @@ int deleteSql_chatting(int field);
 int updateSql_chatting(int field);
 MYSQL_RES * selectSql_chatting(char * userName);
 
-int insertSql_UserInfo(User user);
+int updateSql_UserInfo(User user);
 int deleteSql_UserInfo(int sock);
 
 int updateUserMove(char * userName, int xpos, int ypos, char * field, int seeDirection);
@@ -45,5 +45,8 @@ MYSQL_RES * selectSql_User(int sock);
 int updateDate(int idx);
 
 int insertUserInfo(char * userName);
+
+//최근에 로그아웃한 시간
+int updateLogoutDateTime(int sock);
 
 #endif

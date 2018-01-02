@@ -120,6 +120,12 @@ int main(int argc, char * argv[])
 					close(ep_events[i].data.fd);
 					printf("closed client : %d\n", ep_events[i].data.fd);
 
+					//로그아웃한 시간을 DB에 반영
+					if (updateLogoutDateTime(ep_events[i].data.fd) == -1)
+					{
+						return -1;
+					}
+
 					//종료하는 유저 아이디 불러옴.
 					sql_result = selectSql_User(ep_events[i].data.fd);
 					char imsiName[50];
@@ -194,7 +200,7 @@ int main(int argc, char * argv[])
 							User user;
 							strcpy(user.name, readBuf);
 							user.sock = ep_events[i].data.fd;
-							insertSql_UserInfo(user);
+							updateSql_UserInfo(user);
 
 							//해당 유저의 정보를 가져온다.
 							sql_result = selectSql_UserInfo(ep_events[i].data.fd);

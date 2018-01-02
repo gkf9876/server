@@ -120,11 +120,11 @@ MYSQL_RES * selectSql_chatting(char * userName)
 	return sql_result;
 }
 
-int insertSql_UserInfo(User user)
+int updateSql_UserInfo(User user)
 {
 	char query[255];
 
-	sprintf(query, "UPDATE USER_LIST SET SOCK = '%d', LOGIN = '1' WHERE ID = BINARY('%s')", user.sock, user.name);
+	sprintf(query, "UPDATE USER_LIST SET SOCK = '%d', LOGIN = '1', LAST_LOGIN = SYSDATE() WHERE ID = BINARY('%s')", user.sock, user.name);
 
 	query_stat = mysql_query(connection, query);
 
@@ -247,7 +247,43 @@ int insertUserInfo(char * userName)
 	}
 
 	//아이디 등록
-	sprintf(query, "INSERT INTO USER_LIST(ID, XPOS, YPOS, FIELD, SEEDIRECTION) VALUE('%s', '18', '11', 'TileMaps/KonyangUniv.Daejeon/JukhunDigitalFacilitie/floor_08/floor.tmx', '29')", userName);
+	sprintf(query, "INSERT INTO USER_LIST(ID, XPOS, YPOS, FIELD, SEEDIRECTION, JOIN_DATE) VALUE('%s', '18', '11', 'TileMaps/KonyangUniv.Daejeon/JukhunDigitalFacilitie/floor_08/floor.tmx', '29', SYSDATE())", userName);
+
+	query_stat = mysql_query(connection, query);
+
+	if (query_stat != 0)
+	{
+		fprintf(stderr, "Mysql insert query error : %s", mysql_error(&conn));
+		fprintf(stderr, "Sql : %s", query);
+		return -1;
+	}
+
+	return 1;
+}
+
+int updateLogoutDateTime(int sock)
+{
+	char query[255];
+
+	sprintf(query, "UPDATE USER_LIST SET LAST_LOGOUT = SYSDATE() WHERE SOCK = '%d'", sock);
+
+	query_stat = mysql_query(connection, query);
+
+	if (query_stat != 0)
+	{
+		fprintf(stderr, "Mysql insert query error : %s", mysql_error(&conn));
+		fprintf(stderr, "Sql : %s", query);
+		return -1;
+	}
+
+	return 1;
+}
+
+int updateLoginDateTime(int sock)
+{
+	char query[255];
+
+	sprintf(query, "UPDATE USER_LIST SET LAST_LOGIN = SYSDATE() WHERE SOCK = '%d'", sock);
 
 	query_stat = mysql_query(connection, query);
 
