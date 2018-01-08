@@ -16,6 +16,7 @@
 #define USER_MOVE_UPDATE				4
 #define OTHER_USER_MAP_MOVE				5
 #define REQUEST_JOIN					6
+#define UPDATE_LOGIN_TIME				7
 
 void error_handling(char * message);
 int sendCommand(int sock, int code, char * message);
@@ -85,11 +86,61 @@ int main(int argc, char * argv[])
 	{
 		event_cnt = epoll_wait(epfd, ep_events, EPOLL_SIZE, 10);
 
-		//1초마다 DB시간 업데이트
 		if (dateCount++ >= 100)
 		{
+			//1초마다 DB시간 업데이트
 			if (updateDate(1) == -1)
 				error_handling("error Database Date!!");
+
+			//1초마다 접속한 유저 확인
+			sql_result = comfirmTrueNowLoginUser();
+
+			while ((sql_row = mysql_fetch_row(sql_result)) != NULL)
+			{
+				int sock = atoi(sql_row[0]);
+				int login = atoi(sql_row[1]);
+				MYSQL_RES   	*sql_result1;
+				MYSQL_ROW   	sql_row1;
+
+				if (login == 0)
+				{
+					close(ep_events[i].data.fd);
+					printf("closed client : %d\n", sock);
+
+					//로그아웃한 시간을 DB에 반영
+					if (updateLogoutDateTime(sock) == -1)
+					{
+						return -1;
+					}
+
+					//종료하는 유저 아이디 불러옴.
+					sql_result1 = selectSql_User(sock);
+					char imsiName[50];
+					int imsiXpos, imsiYpos;
+
+					while ((sql_row1 = mysql_fetch_row(sql_result1)) != NULL)
+					{
+						strcpy(imsiName, sql_row1[0]);
+						imsiXpos = atoi(sql_row1[1]);
+						imsiYpos = atoi(sql_row1[2]);
+					}
+					mysql_free_result(sql_result1);
+
+					//종료시 해당 맵의 다른 유저들에게 자기정보를 보내준다.
+					sprintf(sendBuf, "out\n%s\n%d\n%d", imsiName, imsiXpos, imsiYpos);
+					sql_result1 = selectSql_fieldUsers(imsiName);
+
+					while ((sql_row1 = mysql_fetch_row(sql_result1)) != NULL)
+					{
+						str_len = sendCommand(atoi(sql_row1[0]), OTHER_USER_MAP_MOVE, sendBuf);
+					}
+					mysql_free_result(sql_result1);
+
+					deleteSql_UserInfo(sock);
+				}
+			}
+			mysql_free_result(sql_result);
+
 			dateCount = 0;
 		}
 
@@ -310,6 +361,15 @@ int main(int argc, char * argv[])
 						{
 							printf("생성되었습니다.\n");
 							sendCommand(ep_events[i].data.fd, code, "join okey");
+						}
+						break;
+					case UPDATE_LOGIN_TIME:
+						{
+							//로그인상태를 바꾼다.
+							User user;
+							strcpy(user.name, readBuf);
+							user.sock = ep_events[i].data.fd;
+							updateSql_UserInfo(user);
 						}
 						break;
 					default:

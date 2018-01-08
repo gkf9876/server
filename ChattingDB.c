@@ -296,3 +296,21 @@ int updateLoginDateTime(int sock)
 
 	return 1;
 }
+
+MYSQL_RES * comfirmTrueNowLoginUser()
+{
+	char query[255];
+
+	sprintf(query, "SELECT SOCK, IF(DATE_ADD(SYSDATE(), INTERVAL -2 SECOND) <= LAST_LOGIN, TRUE, FALSE) AS LOGIN FROM user_list WHERE LOGIN = '1'");
+
+	query_stat = mysql_query(connection, query);
+	if (query_stat != 0)
+	{
+		fprintf(stderr, "Mysql select query error : %s", mysql_error(&conn));
+		fprintf(stderr, "Sql : %s", query);
+	}
+
+	sql_result = mysql_store_result(connection);
+
+	return sql_result;
+}

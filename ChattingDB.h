@@ -49,4 +49,7 @@ int insertUserInfo(char * userName);
 //최근에 로그아웃한 시간
 int updateLogoutDateTime(int sock);
 
+//지금 찐짜로 접속한 유저 확인
+MYSQL_RES * comfirmTrueNowLoginUser();
+
 #endif
