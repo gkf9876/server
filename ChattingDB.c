@@ -301,7 +301,7 @@ MYSQL_RES * comfirmTrueNowLoginUser()
 {
 	char query[255];
 
-	sprintf(query, "SELECT SOCK, IF(DATE_ADD(SYSDATE(), INTERVAL -2 SECOND) <= LAST_LOGIN, TRUE, FALSE) AS LOGIN FROM user_list WHERE LOGIN = '1'");
+	sprintf(query, "SELECT SOCK, IF(DATE_ADD(SYSDATE(), INTERVAL -10 SECOND) <= LAST_LOGIN, TRUE, FALSE) AS LOGIN FROM user_list WHERE LOGIN = '1'");
 
 	query_stat = mysql_query(connection, query);
 	if (query_stat != 0)

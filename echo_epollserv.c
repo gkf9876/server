@@ -86,13 +86,16 @@ int main(int argc, char * argv[])
 	{
 		event_cnt = epoll_wait(epfd, ep_events, EPOLL_SIZE, 10);
 
-		if (dateCount++ >= 100)
+		if (dateCount / 100 == 0)
 		{
 			//1초마다 DB시간 업데이트
 			if (updateDate(1) == -1)
 				error_handling("error Database Date!!");
+		}
 
-			//1초마다 접속한 유저 확인
+		if(dateCount / 1000 == 0)
+		{
+			//10초마다 접속한 유저 확인
 			sql_result = comfirmTrueNowLoginUser();
 
 			while ((sql_row = mysql_fetch_row(sql_result)) != NULL)
