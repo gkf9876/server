@@ -21,6 +21,8 @@
 #define REQUEST_TILED_MAP				8
 #define REQUEST_IMAGE					9
 
+#define CUR_PATH						"/home/pi/server/"
+
 void error_handling(char * message);
 int sendCommand(int sock, int code, char * message, int size);
 int readCommand(int sock, int * code, char * buf);
@@ -42,6 +44,7 @@ int main(int argc, char * argv[])
 	int code;
 	char name[50];
 	char content[100];
+	char cwd[BUF_SIZE];
 
 	char userMoveInfo[20][BUF_SIZE];
 	int len;
@@ -334,7 +337,7 @@ int main(int argc, char * argv[])
 								printf("userName : %s, xpos : %d, ypos : %d, field : %s\n", name, xpos, ypos, field);
 
 								//이동한 맵의 유저들 정보를 알려준다.
-								sprintf(imsiSendBuf, "in\n%s\n%s\n%s", sql_row[1], sql_row[2], sql_row[3], sql_row[4]);
+								sprintf(imsiSendBuf, "in\n%s\n%s\n%s\n%s", sql_row[1], sql_row[2], sql_row[3], sql_row[4]);
 								sendCommand(ep_events[i].data.fd, OTHER_USER_MAP_MOVE, imsiSendBuf, strlen(imsiSendBuf));
 							}
 							mysql_free_result(sql_result);
@@ -382,10 +385,12 @@ int main(int argc, char * argv[])
 						break;
 					case REQUEST_TILED_MAP:
 						printf("code : %d, content : %s\n", code, readBuf);
+						strcpy(cwd, CUR_PATH);
+						strcat(cwd, readBuf);
 
-						if ((fp = open(readBuf, O_RDONLY)) == -1)
+						if ((fp = open(cwd, O_RDONLY)) == -1)
 						{
-							fprintf(stderr, "File Open error : %s\n", readBuf);
+							fprintf(stderr, "File Open error : %s\n", cwd);
 							return -1;
 						}
 						
@@ -411,10 +416,12 @@ int main(int argc, char * argv[])
 						break;
 					case REQUEST_IMAGE:
 						printf("code : %d, content : %s\n", code, readBuf);
+						strcpy(cwd, CUR_PATH);
+						strcat(cwd, readBuf);
 
-						if ((fp = open(readBuf, O_RDONLY)) == -1)
+						if ((fp = open(cwd, O_RDONLY)) == -1)
 						{
-							fprintf(stderr, "File Open error : %s\n", readBuf);
+							fprintf(stderr, "File Open error : %s\n", cwd);
 							return -1;
 						}
 
@@ -431,7 +438,7 @@ int main(int argc, char * argv[])
 						}
 
 						if (sendCommand(ep_events[i].data.fd, code, fileBuf, size) != -1)
-							printf("File Send Success! : %s\n", readBuf);
+							printf("File Send Success! : %s, Size : %d\n", readBuf, size);
 						else
 							printf("File Send Fail! : %s\n", readBuf);
 
