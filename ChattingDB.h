@@ -30,9 +30,9 @@ int closeMySQL_chatting();
 MYSQL_RES * selectSql_isUser(char * user);
 MYSQL_RES * selectSql_UserInfo(int sock);
 
-int insertSql_chatting(int field, char * name, char * content);
-int deleteSql_chatting(int field);
-int updateSql_chatting(int field);
+int insertSql_chatting(char * field, char * name, char * content);
+int deleteSql_chatting(char * field);
+int updateSql_chatting(char * field);
 MYSQL_RES * selectSql_chatting(char * userName);
 
 int updateSql_UserInfo(User user);

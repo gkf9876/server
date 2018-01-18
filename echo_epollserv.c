@@ -232,13 +232,14 @@ int main(int argc, char * argv[])
 					case CHATTING_PROCESS:			//채팅시
 						printf("code : %d, content : %s\n", code, readBuf);
 
-						char chattingInfo[2][BUF_SIZE];
+						char chattingInfo[3][BUF_SIZE];
 						len = SeparateString(readBuf, chattingInfo, sizeof(chattingInfo) / BUF_SIZE, '\n');
 
 						strcpy(name, chattingInfo[0]);
 						strcpy(content, chattingInfo[1]);
+						strcpy(field, chattingInfo[2]);
 
-						insertSql_chatting(0, name, content);
+						insertSql_chatting(field, name, content);
 
 						sql_result = selectSql_chatting(name);
 

@@ -70,7 +70,7 @@ MYSQL_RES * selectSql_UserInfo(int sock)
 	return sql_result;
 }
 
-int insertSql_chatting(int field, char * name, char * content)
+int insertSql_chatting(char * field, char * name, char * content)
 {
 	char query[255];
 
@@ -80,7 +80,7 @@ int insertSql_chatting(int field, char * name, char * content)
 		return -1;
 	}
 
-	sprintf(query, "INSERT INTO CHATTING(INPUTDATE, NAME, CONTENT) VALUES (SYSDATE(), '%s', '%s')", name, content);
+	sprintf(query, "INSERT INTO CHATTING(INPUTDATE, NAME, CONTENT, FIELD) VALUES (SYSDATE(), '%s', '%s', '%s')", name, content, field);
 
 	query_stat = mysql_query(connection, query);
 
@@ -94,11 +94,11 @@ int insertSql_chatting(int field, char * name, char * content)
 	return 1;
 }
 
-int deleteSql_chatting(int field)
+int deleteSql_chatting(char * field)
 {
 }
 
-int updateSql_chatting(int field)
+int updateSql_chatting(char * field)
 {
 }
 
@@ -220,7 +220,7 @@ int updateDate(int idx)
 
 	if (query_stat != 0)
 	{
-		fprintf(stderr, "Mysql insert query error : %s", mysql_error(&conn));
+		fprintf(stderr, "Mysql update query error : %s", mysql_error(&conn));
 		fprintf(stderr, "Sql : %s", query);
 		return -1;
 	}
@@ -271,7 +271,7 @@ int updateLogoutDateTime(int sock)
 
 	if (query_stat != 0)
 	{
-		fprintf(stderr, "Mysql insert query error : %s", mysql_error(&conn));
+		fprintf(stderr, "Mysql update query error : %s", mysql_error(&conn));
 		fprintf(stderr, "Sql : %s", query);
 		return -1;
 	}
@@ -289,7 +289,7 @@ int updateLoginDateTime(int sock)
 
 	if (query_stat != 0)
 	{
-		fprintf(stderr, "Mysql insert query error : %s", mysql_error(&conn));
+		fprintf(stderr, "Mysql update query error : %s", mysql_error(&conn));
 		fprintf(stderr, "Sql : %s", query);
 		return -1;
 	}
