@@ -20,6 +20,7 @@
 #define UPDATE_LOGIN_TIME				7
 #define REQUEST_TILED_MAP				8
 #define REQUEST_IMAGE					9
+#define DELETE_FIELD_ITEM				10
 
 #define CUR_PATH						"/home/pi/server/"
 
@@ -384,6 +385,7 @@ int main(int argc, char * argv[])
 							updateSql_UserInfo(user);
 						}
 						break;
+					//우저가 타일맵 자료 요청시
 					case REQUEST_TILED_MAP:
 						printf("code : %d, content : %s\n", code, readBuf);
 						strcpy(cwd, CUR_PATH);
@@ -415,6 +417,7 @@ int main(int argc, char * argv[])
 						free(fileBuf);
 						close(fp);
 						break;
+					//유저가 이미지 자료 요청시
 					case REQUEST_IMAGE:
 						printf("code : %d, content : %s\n", code, readBuf);
 						strcpy(cwd, CUR_PATH);
@@ -445,6 +448,38 @@ int main(int argc, char * argv[])
 
 						free(fileBuf);
 						close(fp);
+					//유저가 땅에 떨어진 아이템을 먹을시
+					case DELETE_FIELD_ITEM:
+						printf("code : %d, content : %s\n", code, readBuf);
+
+						char itemPos[5][BUF_SIZE];
+						char userName[BUF_SIZE];
+						char itemName[BUF_SIZE];
+						int xpos;
+						int ypos;
+						int order;
+						len = SeparateString(readBuf, itemPos, sizeof(itemPos) / BUF_SIZE, '\n');
+
+						//먹은 유저 이름
+						strcpy(userName, itemPos[0]);
+						//아이템 이름
+						strcpy(itemName, itemPos[1]);
+						//아이템 위치
+						xpos = atoi(itemPos[2]);
+						ypos = atoi(itemPos[3]);
+						//아이템 순서(숫자가 클수록 맨 위에 위치)
+						order = atoi(itemPos[4]);
+
+						//현재 맵에 있는 유저 목록 출력
+						sql_result = selectSql_fieldUsers(userName);
+
+						while ((sql_row = mysql_fetch_row(sql_result)) != NULL)
+						{
+							//현재 맵의 다른 유저들에게 알림
+							str_len = sendCommand(atoi(sql_row[0]), code, readBuf, strlen(readBuf));
+						}
+						mysql_free_result(sql_result);
+						break;
 					default:
 						break;
 					}
