@@ -13,6 +13,8 @@
 #define DB_PASS "9109382616@"
 #define DB_NAME "test"
 
+#define QUERY_BUF_SIZE 1024
+
 typedef struct user
 {
 	int sock;

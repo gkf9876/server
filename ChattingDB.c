@@ -36,7 +36,7 @@ int closeMySQL_chatting()
 
 MYSQL_RES * selectSql_isUser(char * user)
 {
-	char query[255];
+	char query[QUERY_BUF_SIZE];
 
 	sprintf(query, "SELECT COUNT(ID) AS COUNT FROM USER_LIST WHERE ID = BINARY('%s') AND LOGIN = 0", user);
 
@@ -54,7 +54,7 @@ MYSQL_RES * selectSql_isUser(char * user)
 
 MYSQL_RES * selectSql_UserInfo(int sock)
 {
-	char query[255];
+	char query[QUERY_BUF_SIZE];
 
 	sprintf(query, "SELECT ID, XPOS, YPOS, FIELD, SEEDIRECTION FROM USER_LIST WHERE SOCK = '%d'", sock);
 
@@ -72,7 +72,7 @@ MYSQL_RES * selectSql_UserInfo(int sock)
 
 int insertSql_chatting(char * field, char * name, char * content)
 {
-	char query[255];
+	char query[QUERY_BUF_SIZE];
 
 	if(name == NULL || content == NULL)
 	{
@@ -104,7 +104,7 @@ int updateSql_chatting(char * field)
 
 MYSQL_RES * selectSql_chatting(char * userName)
 {
-	char query[255];
+	char query[QUERY_BUF_SIZE];
 
 	sprintf(query, "SELECT A.SOCK, A.ID, A.XPOS, A.YPOS, A.FIELD FROM USER_LIST A, (SELECT * FROM USER_LIST WHERE ID = BINARY('%s')) B WHERE A.FIELD = B.FIELD", userName);
 
@@ -122,7 +122,7 @@ MYSQL_RES * selectSql_chatting(char * userName)
 
 int updateSql_UserLogin(User user)
 {
-	char query[255];
+	char query[QUERY_BUF_SIZE];
 
 	sprintf(query, "UPDATE USER_LIST SET SOCK = '%d', LOGIN = '1', LAST_LOGIN = SYSDATE() WHERE ID = BINARY('%s')", user.sock, user.name);
 
@@ -140,7 +140,7 @@ int updateSql_UserLogin(User user)
 
 int updateSql_UserLogout(int sock)
 {
-	char query[255];
+	char query[QUERY_BUF_SIZE];
 
 	sprintf(query, "UPDATE USER_LIST SET LOGIN = '0', SOCK = '0' WHERE SOCK = '%d' AND LOGIN = '1'", sock);
 
@@ -158,7 +158,7 @@ int updateSql_UserLogout(int sock)
 
 int updateUserMove(char * userName, int xpos, int ypos, char * field, int seeDirection)
 {
-	char query[255];
+	char query[QUERY_BUF_SIZE];
 
 	sprintf(query, "UPDATE USER_LIST SET XPOS = '%d', YPOS = '%d', FIELD = '%s', SEEDIRECTION = '%d' WHERE ID = BINARY('%s') AND LOGIN = '1'", xpos, ypos, field, seeDirection, userName);
 
@@ -176,7 +176,7 @@ int updateUserMove(char * userName, int xpos, int ypos, char * field, int seeDir
 
 MYSQL_RES * selectSql_fieldUsers(int sock)
 {
-	char query[255];
+	char query[QUERY_BUF_SIZE];
 
 	sprintf(query, "SELECT A.SOCK, A.ID, A.XPOS, A.YPOS, A.SEEDIRECTION FROM USER_LIST A, (SELECT ID, FIELD FROM USER_LIST WHERE SOCK = '%d') B WHERE A.FIELD = B.FIELD AND A.ID <> B.ID AND A.LOGIN = 1", sock);
 
@@ -194,7 +194,7 @@ MYSQL_RES * selectSql_fieldUsers(int sock)
 
 MYSQL_RES * selectSql_User(int sock)
 {
-	char query[255];
+	char query[QUERY_BUF_SIZE];
 
 	sprintf(query, "SELECT ID,XPOS,YPOS FROM USER_LIST WHERE SOCK = '%d'", sock);
 
@@ -212,7 +212,7 @@ MYSQL_RES * selectSql_User(int sock)
 
 int updateDate(int idx)
 {
-	char query[255];
+	char query[QUERY_BUF_SIZE];
 
 	sprintf(query, "UPDATE SERVER_INFO SET INPUTDATE = SYSDATE() WHERE IDX = '%d'", idx);
 
@@ -230,7 +230,7 @@ int updateDate(int idx)
 
 int insertUserInfo(char * userName)
 {
-	char query[255];
+	char query[QUERY_BUF_SIZE];
 
 	//중복되는 아이디인지 확인
 	sprintf(query, "SELECT count(ID) FROM USER_LIST WHERE ID = '%s'", userName);
@@ -263,7 +263,7 @@ int insertUserInfo(char * userName)
 
 int updateLogoutDateTime(int sock)
 {
-	char query[255];
+	char query[QUERY_BUF_SIZE];
 
 	sprintf(query, "UPDATE USER_LIST SET LAST_LOGOUT = SYSDATE() WHERE SOCK = '%d'", sock);
 
@@ -281,7 +281,7 @@ int updateLogoutDateTime(int sock)
 
 int updateLoginDateTime(int sock)
 {
-	char query[255];
+	char query[QUERY_BUF_SIZE];
 
 	sprintf(query, "UPDATE USER_LIST SET LAST_LOGIN = SYSDATE() WHERE SOCK = '%d'", sock);
 
@@ -299,7 +299,7 @@ int updateLoginDateTime(int sock)
 
 MYSQL_RES * selectSql_comfirmTrueNowLoginUser()
 {
-	char query[255];
+	char query[QUERY_BUF_SIZE];
 
 	sprintf(query, "SELECT SOCK, IF(DATE_ADD(SYSDATE(), INTERVAL -10 SECOND) <= LAST_LOGIN, TRUE, FALSE) AS LOGIN FROM user_list WHERE LOGIN = '1'");
 
@@ -317,7 +317,7 @@ MYSQL_RES * selectSql_comfirmTrueNowLoginUser()
 
 MYSQL_RES * selectSql_field_info(char * field)
 {
-	char query[255];
+	char query[QUERY_BUF_SIZE];
 
 	sprintf(query, "SELECT A.idx, A.name, A.type, A.xpos, A.ypos, A.order, A.file_dir, A.count FROM MAP_INFO A WHERE FIELD = '%s'", field);
 

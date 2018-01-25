@@ -354,9 +354,10 @@ int main(int argc, char * argv[])
 						break;
 					case UPDATE_LOGIN_TIME:
 						{
+							printf("code : %d, content : %s\n", code, readBuf);
 							//로그인상태를 바꾼다.
 							User user;
-							strcpy(user.name, readBuf);
+							strncpy(user.name, readBuf, 50);
 							user.sock = ep_events[i].data.fd;
 							updateSql_UserLogin(user);
 						}
@@ -492,6 +493,7 @@ int main(int argc, char * argv[])
 						free(imsiSendBuf);
 						break;
 					default:
+						printf("code : %d, content : %s\n", code, readBuf);
 						break;
 					}
 
