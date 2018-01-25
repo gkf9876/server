@@ -120,7 +120,7 @@ MYSQL_RES * selectSql_chatting(char * userName)
 	return sql_result;
 }
 
-int updateSql_UserInfo(User user)
+int updateSql_UserLogin(User user)
 {
 	char query[255];
 
@@ -138,7 +138,7 @@ int updateSql_UserInfo(User user)
 	return 1;
 }
 
-int deleteSql_UserInfo(int sock)
+int updateSql_UserLogout(int sock)
 {
 	char query[255];
 
@@ -174,11 +174,11 @@ int updateUserMove(char * userName, int xpos, int ypos, char * field, int seeDir
 	return 1;
 }
 
-MYSQL_RES * selectSql_fieldUsers(char * userName)
+MYSQL_RES * selectSql_fieldUsers(int sock)
 {
 	char query[255];
 
-	sprintf(query, "SELECT A.SOCK, A.ID, A.XPOS, A.YPOS, A.SEEDIRECTION FROM USER_LIST A, (SELECT ID, FIELD FROM USER_LIST WHERE ID = BINARY('%s')) B WHERE A.FIELD = B.FIELD AND A.ID <> B.ID AND A.LOGIN = 1", userName);
+	sprintf(query, "SELECT A.SOCK, A.ID, A.XPOS, A.YPOS, A.SEEDIRECTION FROM USER_LIST A, (SELECT ID, FIELD FROM USER_LIST WHERE SOCK = '%d') B WHERE A.FIELD = B.FIELD AND A.ID <> B.ID AND A.LOGIN = 1", sock);
 
 	query_stat = mysql_query(connection, query);
 	if (query_stat != 0)
@@ -297,11 +297,29 @@ int updateLoginDateTime(int sock)
 	return 1;
 }
 
-MYSQL_RES * comfirmTrueNowLoginUser()
+MYSQL_RES * selectSql_comfirmTrueNowLoginUser()
 {
 	char query[255];
 
 	sprintf(query, "SELECT SOCK, IF(DATE_ADD(SYSDATE(), INTERVAL -10 SECOND) <= LAST_LOGIN, TRUE, FALSE) AS LOGIN FROM user_list WHERE LOGIN = '1'");
+
+	query_stat = mysql_query(connection, query);
+	if (query_stat != 0)
+	{
+		fprintf(stderr, "Mysql select query error : %s", mysql_error(&conn));
+		fprintf(stderr, "Sql : %s", query);
+	}
+
+	sql_result = mysql_store_result(connection);
+
+	return sql_result;
+}
+
+MYSQL_RES * selectSql_field_info(char * field)
+{
+	char query[255];
+
+	sprintf(query, "SELECT A.idx, A.name, A.type, A.xpos, A.ypos, A.order, A.file_dir, A.count FROM MAP_INFO A WHERE FIELD = '%s'", field);
 
 	query_stat = mysql_query(connection, query);
 	if (query_stat != 0)

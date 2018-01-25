@@ -35,11 +35,11 @@ int deleteSql_chatting(char * field);
 int updateSql_chatting(char * field);
 MYSQL_RES * selectSql_chatting(char * userName);
 
-int updateSql_UserInfo(User user);
-int deleteSql_UserInfo(int sock);
+int updateSql_UserLogin(User user);
+int updateSql_UserLogout(int sock);
 
 int updateUserMove(char * userName, int xpos, int ypos, char * field, int seeDirection);
-MYSQL_RES * selectSql_fieldUsers(char * userName);
+MYSQL_RES * selectSql_fieldUsers(int sock);
 MYSQL_RES * selectSql_User(int sock);
 
 int updateDate(int idx);
@@ -50,6 +50,9 @@ int insertUserInfo(char * userName);
 int updateLogoutDateTime(int sock);
 
 //지금 찐짜로 접속한 유저 확인
-MYSQL_RES * comfirmTrueNowLoginUser();
+MYSQL_RES * selectSql_comfirmTrueNowLoginUser();
+
+//맵 정보를 가져옴.
+MYSQL_RES * selectSql_field_info(char * field);
 
 #endif

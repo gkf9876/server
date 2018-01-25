@@ -7,6 +7,7 @@
 #include <sys/epoll.h>
 #include <fcntl.h>
 #include "ChattingDB.h"
+#include "CustomObject.h"
 
 #define BUF_SIZE 1024
 #define EPOLL_SIZE 50
@@ -21,13 +22,17 @@
 #define REQUEST_TILED_MAP				8
 #define REQUEST_IMAGE					9
 #define DELETE_FIELD_ITEM				10
+#define REQUEST_FIELD_INFO				11
 
-#define CUR_PATH						"/home/pi/server/"
+//#define CUR_PATH						"/home/gkf9876/server/Resources/"
+#define CUR_PATH						"/home/pi/server/Resources/"
 
 void error_handling(char * message);
 int sendCommand(int sock, int code, char * message, int size);
 int readCommand(int sock, int * code, char * buf);
-int sendFile(int sock, int code, char * name);
+
+//같은맵, 다른 유저와의 상호작용 알고리즘. 특정 유저의 행동을 같은필드, 다른 사람들에게 알림
+int userInteraction(int sock, int code, char * message);
 
 int SeparateString(char * str, char(*arr)[BUF_SIZE], int arrLen, char flag);
 void IntToChar(int value, char * result);
@@ -107,7 +112,7 @@ int main(int argc, char * argv[])
 		if(dateCount / 1000 == 0)
 		{
 			//10초마다 접속한 유저 확인
-			sql_result = comfirmTrueNowLoginUser();
+			sql_result = selectSql_comfirmTrueNowLoginUser();
 
 			while ((sql_row = mysql_fetch_row(sql_result)) != NULL)
 			{
@@ -142,15 +147,9 @@ int main(int argc, char * argv[])
 
 					//종료시 해당 맵의 다른 유저들에게 자기정보를 보내준다.
 					sprintf(sendBuf, "out\n%s\n%d\n%d", imsiName, imsiXpos, imsiYpos);
-					sql_result1 = selectSql_fieldUsers(imsiName);
+					userInteraction(ep_events[i].data.fd, OTHER_USER_MAP_MOVE, sendBuf);
 
-					while ((sql_row1 = mysql_fetch_row(sql_result1)) != NULL)
-					{
-						str_len = sendCommand(atoi(sql_row1[0]), OTHER_USER_MAP_MOVE, sendBuf, strlen(sendBuf));
-					}
-					mysql_free_result(sql_result1);
-
-					deleteSql_UserInfo(sock);
+					updateSql_UserLogout(sock);
 				}
 			}
 			mysql_free_result(sql_result);
@@ -206,15 +205,9 @@ int main(int argc, char * argv[])
 
 					//종료시 해당 맵의 다른 유저들에게 자기정보를 보내준다.
 					sprintf(sendBuf, "out\n%s\n%d\n%d", imsiName, imsiXpos, imsiYpos);
-					sql_result = selectSql_fieldUsers(imsiName);
+					userInteraction(ep_events[i].data.fd, OTHER_USER_MAP_MOVE, sendBuf);
 
-					while ((sql_row = mysql_fetch_row(sql_result)) != NULL)
-					{
-						str_len = sendCommand(atoi(sql_row[0]), OTHER_USER_MAP_MOVE, sendBuf, strlen(sendBuf));
-					}
-					mysql_free_result(sql_result);
-
-					deleteSql_UserInfo(ep_events[i].data.fd);
+					updateSql_UserLogout(ep_events[i].data.fd);
 				}
 				else
 				{
@@ -240,16 +233,11 @@ int main(int argc, char * argv[])
 						strcpy(content, chattingInfo[1]);
 						strcpy(field, chattingInfo[2]);
 
+						//데이터베이스에 저장한다.
 						insertSql_chatting(field, name, content);
 
-						sql_result = selectSql_chatting(name);
-
-						while ((sql_row = mysql_fetch_row(sql_result)) != NULL)
-						{
-							str_len = sendCommand(atoi(sql_row[0]), code, readBuf, strlen(readBuf));
-						}
-						mysql_free_result(sql_result);
-
+						//같은 필드의 다른 유저들에게 채팅메시지를 전송한다.
+						userInteraction(ep_events[i].data.fd, code, readBuf);
 						break;
 					case REQUEST_LOGIN:				//로그인 승인시
 						printf("code : %d, content : %s\n", code, readBuf);
@@ -266,7 +254,7 @@ int main(int argc, char * argv[])
 							User user;
 							strcpy(user.name, readBuf);
 							user.sock = ep_events[i].data.fd;
-							updateSql_UserInfo(user);
+							updateSql_UserLogin(user);
 
 							//해당 유저의 정보를 가져온다.
 							sql_result = selectSql_UserInfo(ep_events[i].data.fd);
@@ -281,7 +269,7 @@ int main(int argc, char * argv[])
 
 							//접속시 해당 맵의 다른 유저들에게 자기정보를 보내준다.
 							sprintf(sendBuf, "in\n%s\n%d\n%d\n%d", user.name, user.xpos, user.ypos, user.seeDirection);
-							sql_result = selectSql_fieldUsers(user.name);
+							sql_result = selectSql_fieldUsers(ep_events[i].data.fd);
 
 							char imsiSendBuf[BUF_SIZE];
 
@@ -317,19 +305,12 @@ int main(int argc, char * argv[])
 						{
 							//맵에서 나갈때 나가기전에 다른 유저들한테 보냄.
 							sprintf(sendBuf, "out\n%s\n%d\n%d", name, regionXpos, regionYpos);
-							sql_result = selectSql_fieldUsers(name);
-
-							while ((sql_row = mysql_fetch_row(sql_result)) != NULL)
-							{
-								str_len = sendCommand(atoi(sql_row[0]), OTHER_USER_MAP_MOVE, sendBuf, strlen(sendBuf));
-								printf("userName : %s, xpos : %d, ypos : %d, field : %s\n", name, xpos, ypos, field);
-							}
-							mysql_free_result(sql_result);
+							userInteraction(ep_events[i].data.fd, OTHER_USER_MAP_MOVE, sendBuf);
 							updateUserMove(name, xpos, ypos, field, seeDirection);
 
 							//맵에서 나가고 나서 다른 맵에 진입할때 다른 유저들한테 보냄.
 							sprintf(sendBuf, "in\n%s\n%d\n%d\n%d", name, xpos, ypos, seeDirection);
-							sql_result = selectSql_fieldUsers(name);
+							sql_result = selectSql_fieldUsers(ep_events[i].data.fd);
 
 							char imsiSendBuf[BUF_SIZE];
 
@@ -349,14 +330,9 @@ int main(int argc, char * argv[])
 							//현재 맵에서 이동할때.
 							updateUserMove(name, xpos, ypos, field, seeDirection);
 							sprintf(sendBuf, "move\n%s\n%d\n%d\n%d", name, xpos, ypos, seeDirection);
-							sql_result = selectSql_fieldUsers(name);
 
-							while ((sql_row = mysql_fetch_row(sql_result)) != NULL)
-							{
-								str_len = sendCommand(atoi(sql_row[0]), OTHER_USER_MAP_MOVE, sendBuf, strlen(sendBuf));
-								printf("userName : %s, xpos : %d, ypos : %d, field : %s\n", name, xpos, ypos, field);
-							}
-							mysql_free_result(sql_result);
+							//다른 유저에게 알림
+							userInteraction(ep_events[i].data.fd, OTHER_USER_MAP_MOVE, sendBuf);
 						} 
 						break;
 					case OTHER_USER_MAP_MOVE:
@@ -382,7 +358,7 @@ int main(int argc, char * argv[])
 							User user;
 							strcpy(user.name, readBuf);
 							user.sock = ep_events[i].data.fd;
-							updateSql_UserInfo(user);
+							updateSql_UserLogin(user);
 						}
 						break;
 					//우저가 타일맵 자료 요청시
@@ -446,8 +422,16 @@ int main(int argc, char * argv[])
 						else
 							printf("File Send Fail! : %s\n", readBuf);
 
+						/*for (int i = 0; i < size; i++)
+						{
+							printf("%d\t", (unsigned char)fileBuf[i]);
+							if (i % 20 == 0)
+								printf("\n");
+						}*/
+
 						free(fileBuf);
 						close(fp);
+						break;
 					//유저가 땅에 떨어진 아이템을 먹을시
 					case DELETE_FIELD_ITEM:
 						printf("code : %d, content : %s\n", code, readBuf);
@@ -470,15 +454,42 @@ int main(int argc, char * argv[])
 						//아이템 순서(숫자가 클수록 맨 위에 위치)
 						order = atoi(itemPos[4]);
 
-						//현재 맵에 있는 유저 목록 출력
-						sql_result = selectSql_fieldUsers(userName);
+						//다른 유저에게 알림
+						userInteraction(ep_events[i].data.fd, code, readBuf);
+						break;
+					//맵정보를 불러올때
+					case REQUEST_FIELD_INFO:
+						printf("code : %d, content : %s\n", code, readBuf);
+						StructCustomObject objectInfo[100];
+						int objectCount = 0;
+						char * imsiSendBuf;
+
+						//맵의 정보를 출력
+						sql_result = selectSql_field_info(readBuf);
 
 						while ((sql_row = mysql_fetch_row(sql_result)) != NULL)
 						{
-							//현재 맵의 다른 유저들에게 알림
-							str_len = sendCommand(atoi(sql_row[0]), code, readBuf, strlen(readBuf));
+							objectInfo[objectCount].idx = atoi(sql_row[0]);
+							strcpy(objectInfo[objectCount].name, sql_row[1]);
+							strcpy(objectInfo[objectCount].type, sql_row[2]);
+							objectInfo[objectCount].xpos = atoi(sql_row[3]);
+							objectInfo[objectCount].ypos = atoi(sql_row[4]);
+							objectInfo[objectCount].order = atoi(sql_row[5]);
+							strcpy(objectInfo[objectCount].fileDir, sql_row[6]);
+							objectInfo[objectCount].count = atoi(sql_row[7]);
+							objectCount++;
 						}
 						mysql_free_result(sql_result);
+
+						imsiSendBuf = (char*)malloc(sizeof(int) + sizeof(StructCustomObject) * objectCount);
+						memcpy(&imsiSendBuf[0], &objectCount, sizeof(int));
+						memcpy(&imsiSendBuf[4], objectInfo, sizeof(StructCustomObject) * objectCount);
+
+						str_len = sendCommand(ep_events[i].data.fd, code, imsiSendBuf, sizeof(int) + sizeof(StructCustomObject) * objectCount);
+						if (str_len <= 0)
+							printf("Request Field Info Send Error!!\n");
+
+						free(imsiSendBuf);
 						break;
 					default:
 						break;
@@ -514,13 +525,14 @@ int sendCommand(int sock, int code, char * message, int size)
 	buf = (char*)malloc(size + 9);
 	IntToChar(size, &buf[0]);
 	IntToChar(code, &buf[4]);
-	strcpy(&buf[8], message);
+	//strcpy(&buf[8], message);
 
-	writeLen = write(sock, buf, size + 8);
+	writeLen = write(sock, buf, 8);
+	writeLen += write(sock, message, size);
 
 	free(buf);
 
-	if(writeLen == -1)
+	if(writeLen <= 0)
 		return -1;
 	else
 		return writeLen;
@@ -552,6 +564,34 @@ int readCommand(int sock, int * code, char * buf)
 	buf[len] = 0;
 
 	return len;
+}
+
+//같은맵, 다른 유저와의 상호작용 알고리즘. 특정 유저의 행동을 같은필드, 다른 사람들에게 알림
+int userInteraction(int sock, int code, char * message)
+{
+	MYSQL_RES   	*sql_result;
+	MYSQL_ROW   	sql_row;
+	int str_len;
+	int result = 1;
+	char errorMessage[50];
+
+	//현재 맵에 있는 유저 목록 출력
+	sql_result = selectSql_fieldUsers(sock);
+
+	while ((sql_row = mysql_fetch_row(sql_result)) != NULL)
+	{
+		//현재 맵의 다른 유저들에게 알림
+		str_len = sendCommand(atoi(sql_row[0]), code, message, strlen(message));
+
+		if (str_len <= 0)
+		{
+			printf("Other User Send Error!! : user(%d), Code(%d), Message(%s)\n", atoi(sql_row[0]), code, message);
+			result = -1;
+		}
+	}
+	mysql_free_result(sql_result);
+
+	return result;
 }
 
 int SeparateString(char * str, char(*arr)[BUF_SIZE], int arrLen, char flag)
