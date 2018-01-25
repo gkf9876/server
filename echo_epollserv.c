@@ -123,7 +123,7 @@ int main(int argc, char * argv[])
 
 				if (login == 0)
 				{
-					close(ep_events[i].data.fd);
+					close(sock);
 					printf("closed client : %d\n", sock);
 
 					//로그아웃한 시간을 DB에 반영
@@ -147,7 +147,7 @@ int main(int argc, char * argv[])
 
 					//종료시 해당 맵의 다른 유저들에게 자기정보를 보내준다.
 					sprintf(sendBuf, "out\n%s\n%d\n%d", imsiName, imsiXpos, imsiYpos);
-					userInteraction(ep_events[i].data.fd, OTHER_USER_MAP_MOVE, sendBuf);
+					userInteraction(sock, OTHER_USER_MAP_MOVE, sendBuf);
 
 					updateSql_UserLogout(sock);
 				}
