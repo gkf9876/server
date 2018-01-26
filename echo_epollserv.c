@@ -32,7 +32,7 @@ int sendCommand(int sock, int code, char * message, int size);
 int readCommand(int sock, int * code, char * buf);
 
 //같은맵, 다른 유저와의 상호작용 알고리즘. 특정 유저의 행동을 같은필드, 다른 사람들에게 알림
-int userInteraction(int sock, int code, char * message);
+int userInteraction(int sock, int code, char * message, int size);
 
 int SeparateString(char * str, char(*arr)[BUF_SIZE], int arrLen, char flag);
 void IntToChar(int value, char * result);
@@ -147,7 +147,7 @@ int main(int argc, char * argv[])
 
 					//종료시 해당 맵의 다른 유저들에게 자기정보를 보내준다.
 					sprintf(sendBuf, "out\n%s\n%d\n%d", imsiName, imsiXpos, imsiYpos);
-					userInteraction(sock, OTHER_USER_MAP_MOVE, sendBuf);
+					userInteraction(sock, OTHER_USER_MAP_MOVE, sendBuf, strlen(sendBuf));
 
 					updateSql_UserLogout(sock);
 				}
@@ -205,7 +205,7 @@ int main(int argc, char * argv[])
 
 					//종료시 해당 맵의 다른 유저들에게 자기정보를 보내준다.
 					sprintf(sendBuf, "out\n%s\n%d\n%d", imsiName, imsiXpos, imsiYpos);
-					userInteraction(ep_events[i].data.fd, OTHER_USER_MAP_MOVE, sendBuf);
+					userInteraction(ep_events[i].data.fd, OTHER_USER_MAP_MOVE, sendBuf, strlen(sendBuf));
 
 					updateSql_UserLogout(ep_events[i].data.fd);
 				}
@@ -237,7 +237,7 @@ int main(int argc, char * argv[])
 						insertSql_chatting(field, name, content);
 
 						//같은 필드의 다른 유저들에게 채팅메시지를 전송한다.
-						userInteraction(ep_events[i].data.fd, code, readBuf);
+						userInteraction(ep_events[i].data.fd, code, readBuf, strlen(readBuf));
 						break;
 					case REQUEST_LOGIN:				//로그인 승인시
 						printf("code : %d, content : %s\n", code, readBuf);
@@ -305,7 +305,7 @@ int main(int argc, char * argv[])
 						{
 							//맵에서 나갈때 나가기전에 다른 유저들한테 보냄.
 							sprintf(sendBuf, "out\n%s\n%d\n%d", name, regionXpos, regionYpos);
-							userInteraction(ep_events[i].data.fd, OTHER_USER_MAP_MOVE, sendBuf);
+							userInteraction(ep_events[i].data.fd, OTHER_USER_MAP_MOVE, sendBuf, strlen(sendBuf));
 							updateUserMove(name, xpos, ypos, field, seeDirection);
 
 							//맵에서 나가고 나서 다른 맵에 진입할때 다른 유저들한테 보냄.
@@ -332,7 +332,7 @@ int main(int argc, char * argv[])
 							sprintf(sendBuf, "move\n%s\n%d\n%d\n%d", name, xpos, ypos, seeDirection);
 
 							//다른 유저에게 알림
-							userInteraction(ep_events[i].data.fd, OTHER_USER_MAP_MOVE, sendBuf);
+							userInteraction(ep_events[i].data.fd, OTHER_USER_MAP_MOVE, sendBuf, strlen(sendBuf));
 						} 
 						break;
 					case OTHER_USER_MAP_MOVE:
@@ -436,27 +436,14 @@ int main(int argc, char * argv[])
 					//유저가 땅에 떨어진 아이템을 먹을시
 					case DELETE_FIELD_ITEM:
 						printf("code : %d, content : %s\n", code, readBuf);
+						StructCustomObject * a = (StructCustomObject*)malloc(sizeof(StructCustomObject));
+						memcpy(a, readBuf, sizeof(StructCustomObject));
 
-						char itemPos[5][BUF_SIZE];
-						char userName[BUF_SIZE];
-						char itemName[BUF_SIZE];
-						int xpos;
-						int ypos;
-						int order;
-						len = SeparateString(readBuf, itemPos, sizeof(itemPos) / BUF_SIZE, '\n');
-
-						//먹은 유저 이름
-						strcpy(userName, itemPos[0]);
-						//아이템 이름
-						strcpy(itemName, itemPos[1]);
-						//아이템 위치
-						xpos = atoi(itemPos[2]);
-						ypos = atoi(itemPos[3]);
-						//아이템 순서(숫자가 클수록 맨 위에 위치)
-						order = atoi(itemPos[4]);
+						printf("name : %s, Count : %d\n", a->name, a->count);
+						free(a);
 
 						//다른 유저에게 알림
-						userInteraction(ep_events[i].data.fd, code, readBuf);
+						userInteraction(ep_events[i].data.fd, code, readBuf, sizeof(StructCustomObject));
 						break;
 					//맵정보를 불러올때
 					case REQUEST_FIELD_INFO:
@@ -569,7 +556,7 @@ int readCommand(int sock, int * code, char * buf)
 }
 
 //같은맵, 다른 유저와의 상호작용 알고리즘. 특정 유저의 행동을 같은필드, 다른 사람들에게 알림
-int userInteraction(int sock, int code, char * message)
+int userInteraction(int sock, int code, char * message, int size)
 {
 	MYSQL_RES   	*sql_result;
 	MYSQL_ROW   	sql_row;
@@ -583,7 +570,7 @@ int userInteraction(int sock, int code, char * message)
 	while ((sql_row = mysql_fetch_row(sql_result)) != NULL)
 	{
 		//현재 맵의 다른 유저들에게 알림
-		str_len = sendCommand(atoi(sql_row[0]), code, message, strlen(message));
+		str_len = sendCommand(atoi(sql_row[0]), code, message, size);
 
 		if (str_len <= 0)
 		{
