@@ -23,9 +23,10 @@
 #define REQUEST_IMAGE					9
 #define DELETE_FIELD_ITEM				10
 #define REQUEST_FIELD_INFO				11
+#define REQUEST_INVENTORY_ITEM_INFO		12
 
-//#define CUR_PATH						"/home/gkf9876/server/Resources/"
-#define CUR_PATH						"/home/pi/server/Resources/"
+#define CUR_PATH						"/home/gkf9876/server/Resources/"
+//#define CUR_PATH						"/home/pi/server/Resources/"
 
 void error_handling(char * message);
 int sendCommand(int sock, int code, char * message, int size);
@@ -436,11 +437,16 @@ int main(int argc, char * argv[])
 					//유저가 땅에 떨어진 아이템을 먹을시
 					case DELETE_FIELD_ITEM:
 						printf("code : %d, content : %s\n", code, readBuf);
-						StructCustomObject * a = (StructCustomObject*)malloc(sizeof(StructCustomObject));
-						memcpy(a, readBuf, sizeof(StructCustomObject));
+						StructCustomObject * imsiItemInfo = (StructCustomObject*)malloc(sizeof(StructCustomObject));
+						memcpy(imsiItemInfo, readBuf, sizeof(StructCustomObject));
 
-						printf("name : %s, Count : %d\n", a->name, a->count);
-						free(a);
+						//맵의 아이템을 지운다.
+						deleteMapObject(imsiItemInfo->idx);
+
+						//맵의 아이템을 인벤토리에 추가한다.
+						insertInventoryItem(ep_events[i].data.fd, *imsiItemInfo);
+
+						free(imsiItemInfo);
 
 						//다른 유저에게 알림
 						userInteraction(ep_events[i].data.fd, code, readBuf, sizeof(StructCustomObject));
@@ -478,6 +484,41 @@ int main(int argc, char * argv[])
 							printf("Request Field Info Send Error!!\n");
 
 						free(imsiSendBuf);
+						break;
+					case REQUEST_INVENTORY_ITEM_INFO:
+						printf("code : %d, content : %s\n", code, readBuf);
+						StructCustomObject itemInfo[100];
+						int itemCount = 0;
+						char * imsiSendBuf2;
+
+						//인벤토리의 정보를 출력
+						sql_result = selectSql_inventory_info(readBuf);
+
+						while ((sql_row = mysql_fetch_row(sql_result)) != NULL)
+						{
+							itemInfo[itemCount].idx = atoi(sql_row[0]);
+							strcpy(itemInfo[itemCount].name, sql_row[1]);
+							strcpy(itemInfo[itemCount].type, sql_row[2]);
+							itemInfo[itemCount].xpos = atoi(sql_row[3]);
+							itemInfo[itemCount].ypos = atoi(sql_row[4]);
+							itemInfo[itemCount].order = atoi(sql_row[5]);
+							strcpy(itemInfo[itemCount].fileDir, sql_row[6]);
+							itemInfo[itemCount].count = atoi(sql_row[7]);
+
+							printf("name : %s, type : %s, pos(%d, %d)\n", itemInfo[itemCount].name, itemInfo[itemCount].type, itemInfo[itemCount].xpos, itemInfo[itemCount].ypos);
+							itemCount++;
+						}
+						mysql_free_result(sql_result);
+
+						imsiSendBuf2 = (char*)malloc(sizeof(int) + sizeof(StructCustomObject) * itemCount);
+						memcpy(&imsiSendBuf2[0], &itemCount, sizeof(int));
+						memcpy(&imsiSendBuf2[4], itemInfo, sizeof(StructCustomObject) * itemCount);
+
+						str_len = sendCommand(ep_events[i].data.fd, code, imsiSendBuf2, sizeof(int) + sizeof(StructCustomObject) * itemCount);
+						if (str_len <= 0)
+							printf("Request Inventory Info Send Error!!\n");
+
+						free(imsiSendBuf2);
 						break;
 					default:
 						printf("code : %d, content : %s\n", code, readBuf);

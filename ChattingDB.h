@@ -7,6 +7,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include "CustomObject.h"
 
 #define DB_HOST "127.0.0.1"
 #define DB_USER "gkf9876"
@@ -56,5 +57,14 @@ MYSQL_RES * selectSql_comfirmTrueNowLoginUser();
 
 //맵 정보를 가져옴.
 MYSQL_RES * selectSql_field_info(char * field);
+
+//맵의 아이템을 지움
+int deleteMapObject(int idx);
+
+//인벤토리에 아이템을 넣어준다.
+int insertInventoryItem(int sock, StructCustomObject structCustomObject);
+
+//인벤토리 정보를 불러온다.
+MYSQL_RES * selectSql_inventory_info(char * userName);
 
 #endif

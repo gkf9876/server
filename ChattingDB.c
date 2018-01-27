@@ -15,7 +15,7 @@ int openMySQL_chatting()
 
 	if (connection == NULL)
 	{
-		fprintf(stderr, "Mysql connection error : %s", mysql_error(&conn));
+		fprintf(stderr, "Mysql connection error : %s\n", mysql_error(&conn));
 
 		return -1;
 	}
@@ -43,8 +43,8 @@ MYSQL_RES * selectSql_isUser(char * user)
 	query_stat = mysql_query(connection, query);
 	if (query_stat != 0)
 	{
-		fprintf(stderr, "Mysql select query error : %s", mysql_error(&conn));
-		fprintf(stderr, "Sql : %s", query);
+		fprintf(stderr, "Mysql select query error : %s\n", mysql_error(&conn));
+		fprintf(stderr, "Sql : %s\n", query);
 	}
 
 	sql_result = mysql_store_result(connection);
@@ -61,8 +61,8 @@ MYSQL_RES * selectSql_UserInfo(int sock)
 	query_stat = mysql_query(connection, query);
 	if (query_stat != 0)
 	{
-		fprintf(stderr, "Mysql select query error : %s", mysql_error(&conn));
-		fprintf(stderr, "Sql : %s", query);
+		fprintf(stderr, "Mysql select query error : %s\n", mysql_error(&conn));
+		fprintf(stderr, "Sql : %s\n", query);
 	}
 
 	sql_result = mysql_store_result(connection);
@@ -76,7 +76,7 @@ int insertSql_chatting(char * field, char * name, char * content)
 
 	if(name == NULL || content == NULL)
 	{
-		fprintf(stderr, "Mysql insert error : %s", mysql_error(&conn));
+		fprintf(stderr, "Mysql insert error : %s\n", mysql_error(&conn));
 		return -1;
 	}
 
@@ -86,8 +86,8 @@ int insertSql_chatting(char * field, char * name, char * content)
 
 	if (query_stat != 0)
 	{
-		fprintf(stderr, "Mysql insert query error : %s", mysql_error(&conn));
-		fprintf(stderr, "Sql : %s", query);
+		fprintf(stderr, "Mysql insert query error : %s\n", mysql_error(&conn));
+		fprintf(stderr, "Sql : %s\n", query);
 		return -1;
 	}
 
@@ -111,8 +111,8 @@ MYSQL_RES * selectSql_chatting(char * userName)
 	query_stat = mysql_query(connection, query);
 	if (query_stat != 0)
 	{
-		fprintf(stderr, "Mysql select query error : %s", mysql_error(&conn));
-		fprintf(stderr, "Sql : %s", query);
+		fprintf(stderr, "Mysql select query error : %s\n", mysql_error(&conn));
+		fprintf(stderr, "Sql : %s\n", query);
 	}
 
 	sql_result = mysql_store_result(connection);
@@ -130,8 +130,8 @@ int updateSql_UserLogin(User user)
 
 	if (query_stat != 0)
 	{
-		fprintf(stderr, "Mysql insert query error : %s", mysql_error(&conn));
-		fprintf(stderr, "Sql : %s", query);
+		fprintf(stderr, "Mysql update query error : %s\n", mysql_error(&conn));
+		fprintf(stderr, "Sql : %s\n", query);
 		return -1;
 	}
 
@@ -148,8 +148,8 @@ int updateSql_UserLogout(int sock)
 
 	if (query_stat != 0)
 	{
-		fprintf(stderr, "Mysql insert query error : %s", mysql_error(&conn));
-		fprintf(stderr, "Sql : %s", query);
+		fprintf(stderr, "Mysql update query error : %s\n", mysql_error(&conn));
+		fprintf(stderr, "Sql : %s\n", query);
 		return -1;
 	}
 
@@ -166,8 +166,8 @@ int updateUserMove(char * userName, int xpos, int ypos, char * field, int seeDir
 
 	if (query_stat != 0)
 	{
-		fprintf(stderr, "Mysql insert query error : %s", mysql_error(&conn));
-		fprintf(stderr, "Sql : %s", query);
+		fprintf(stderr, "Mysql update query error : %s\n", mysql_error(&conn));
+		fprintf(stderr, "Sql : %s\n", query);
 		return -1;
 	}
 
@@ -183,8 +183,8 @@ MYSQL_RES * selectSql_fieldUsers(int sock)
 	query_stat = mysql_query(connection, query);
 	if (query_stat != 0)
 	{
-		fprintf(stderr, "Mysql select query error : %s", mysql_error(&conn));
-		fprintf(stderr, "Sql : %s", query);
+		fprintf(stderr, "Mysql select query error : %s\n", mysql_error(&conn));
+		fprintf(stderr, "Sql : %s\n", query);
 	}
 
 	sql_result = mysql_store_result(connection);
@@ -201,8 +201,8 @@ MYSQL_RES * selectSql_User(int sock)
 	query_stat = mysql_query(connection, query);
 	if (query_stat != 0)
 	{
-		fprintf(stderr, "Mysql select query error : %s", mysql_error(&conn));
-		fprintf(stderr, "Sql : %s", query);
+		fprintf(stderr, "Mysql select query error : %s\n", mysql_error(&conn));
+		fprintf(stderr, "Sql : %s\n", query);
 	}
 
 	sql_result = mysql_store_result(connection);
@@ -220,8 +220,8 @@ int updateDate(int idx)
 
 	if (query_stat != 0)
 	{
-		fprintf(stderr, "Mysql update query error : %s", mysql_error(&conn));
-		fprintf(stderr, "Sql : %s", query);
+		fprintf(stderr, "Mysql update query error : %s\n", mysql_error(&conn));
+		fprintf(stderr, "Sql : %s\n", query);
 		return -1;
 	}
 
@@ -253,8 +253,8 @@ int insertUserInfo(char * userName)
 
 	if (query_stat != 0)
 	{
-		fprintf(stderr, "Mysql insert query error : %s", mysql_error(&conn));
-		fprintf(stderr, "Sql : %s", query);
+		fprintf(stderr, "Mysql insert query error : %s\n", mysql_error(&conn));
+		fprintf(stderr, "Sql : %s\n", query);
 		return -1;
 	}
 
@@ -271,8 +271,8 @@ int updateLogoutDateTime(int sock)
 
 	if (query_stat != 0)
 	{
-		fprintf(stderr, "Mysql update query error : %s", mysql_error(&conn));
-		fprintf(stderr, "Sql : %s", query);
+		fprintf(stderr, "Mysql update query error : %s\n", mysql_error(&conn));
+		fprintf(stderr, "Sql : %s\n", query);
 		return -1;
 	}
 
@@ -289,8 +289,8 @@ int updateLoginDateTime(int sock)
 
 	if (query_stat != 0)
 	{
-		fprintf(stderr, "Mysql update query error : %s", mysql_error(&conn));
-		fprintf(stderr, "Sql : %s", query);
+		fprintf(stderr, "Mysql update query error : %s\n", mysql_error(&conn));
+		fprintf(stderr, "Sql : %s\n", query);
 		return -1;
 	}
 
@@ -306,8 +306,8 @@ MYSQL_RES * selectSql_comfirmTrueNowLoginUser()
 	query_stat = mysql_query(connection, query);
 	if (query_stat != 0)
 	{
-		fprintf(stderr, "Mysql select query error : %s", mysql_error(&conn));
-		fprintf(stderr, "Sql : %s", query);
+		fprintf(stderr, "Mysql select query error : %s\n", mysql_error(&conn));
+		fprintf(stderr, "Sql : %s\n", query);
 	}
 
 	sql_result = mysql_store_result(connection);
@@ -324,8 +324,67 @@ MYSQL_RES * selectSql_field_info(char * field)
 	query_stat = mysql_query(connection, query);
 	if (query_stat != 0)
 	{
-		fprintf(stderr, "Mysql select query error : %s", mysql_error(&conn));
-		fprintf(stderr, "Sql : %s", query);
+		fprintf(stderr, "Mysql select query error : %s\n", mysql_error(&conn));
+		fprintf(stderr, "Sql : %s\n", query);
+	}
+
+	sql_result = mysql_store_result(connection);
+
+	return sql_result;
+}
+
+int deleteMapObject(int idx)
+{
+	char query[QUERY_BUF_SIZE];
+
+	sprintf(query, "DELETE FROM MAP_INFO WHERE IDX = '%d'", idx);
+
+	query_stat = mysql_query(connection, query);
+
+	if (query_stat != 0)
+	{
+		fprintf(stderr, "Mysql update query error : %s\n", mysql_error(&conn));
+		fprintf(stderr, "Sql : %s\n", query);
+		return -1;
+	}
+
+	return 1;
+}
+
+int insertInventoryItem(int sock, StructCustomObject structCustomObject)
+{
+	char query[QUERY_BUF_SIZE];
+
+	sprintf(query, "INSERT INTO INVENTORY_INFO(IDX, NAME, USER, TYPE, XPOS, YPOS, FILE_DIR, COUNT) ");
+	sprintf(&query[strlen(query)], "SELECT '%d' AS IDX, '%s' AS NAME, A.ID AS USER, '%s' AS TYPE, ", structCustomObject.idx, structCustomObject.name, structCustomObject.type);
+	sprintf(&query[strlen(query)], "'%d' AS XPOS, '%d' AS YPOS, '%s' AS FILE_DIR, '%d' AS COUNT ", structCustomObject.xpos, structCustomObject.ypos, structCustomObject.fileDir, structCustomObject.count);
+	sprintf(&query[strlen(query)], "FROM USER_LIST A WHERE SOCK = '%d' AND LOGIN = 1 ", sock);
+	sprintf(&query[strlen(query)], "ON DUPLICATE KEY UPDATE IDX = '%d', NAME = '%s', USER = A.ID, TYPE = '%s', ", structCustomObject.idx, structCustomObject.name, structCustomObject.type);
+	sprintf(&query[strlen(query)], "FILE_DIR = '%s', COUNT = COUNT + '%d' ", structCustomObject.fileDir, structCustomObject.count);
+
+	query_stat = mysql_query(connection, query);
+
+	if (query_stat != 0)
+	{
+		fprintf(stderr, "Mysql insert query error : %s\n", mysql_error(&conn));
+		fprintf(stderr, "Sql : %s\n", query);
+		return -1;
+	}
+
+	return 1;
+}
+
+MYSQL_RES * selectSql_inventory_info(char * userName)
+{
+	char query[QUERY_BUF_SIZE];
+
+	sprintf(query, "SELECT A.IDX, A.NAME, A.TYPE, A.XPOS, A.YPOS, A.ORDER, A.FILE_DIR, A.COUNT FROM INVENTORY_INFO A WHERE A.USER = '%s'", userName);
+
+	query_stat = mysql_query(connection, query);
+	if (query_stat != 0)
+	{
+		fprintf(stderr, "Mysql select query error : %s\n", mysql_error(&conn));
+		fprintf(stderr, "Sql : %s\n", query);
 	}
 
 	sql_result = mysql_store_result(connection);
