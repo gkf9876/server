@@ -319,7 +319,7 @@ MYSQL_RES * selectSql_field_info(char * field)
 {
 	char query[QUERY_BUF_SIZE];
 
-	sprintf(query, "SELECT A.idx, A.name, A.type, A.xpos, A.ypos, A.order, A.file_dir, A.count FROM MAP_INFO A WHERE FIELD = '%s'", field);
+	sprintf(query, "SELECT A.idx, A.name, A.type, A.xpos, A.ypos, A.z_order, A.file_dir, A.count FROM MAP_INFO A WHERE FIELD = '%s'", field);
 
 	query_stat = mysql_query(connection, query);
 	if (query_stat != 0)
@@ -414,4 +414,82 @@ int updateInventoryItem(int sock, StructCustomObject structCustomObject)
 	}
 
 	return 1;
+}
+
+int insertSql_mapObject(char * field, StructCustomObject structCustomObject)
+{
+	char query[QUERY_BUF_SIZE];
+
+	int idx = structCustomObject.idx;
+	char name[50];
+	strcpy(name, structCustomObject.name);
+	char type[50];
+	strcpy(type, structCustomObject.type);
+	int xpos = structCustomObject.xpos;
+	int ypos = structCustomObject.ypos;
+	int order = structCustomObject.order;
+	char fileDir[100];
+	strcpy(fileDir, structCustomObject.fileDir);
+	int count = structCustomObject.count;
+
+	sprintf(query, "INSERT INTO MAP_INFO(IDX, NAME, TYPE, XPOS, YPOS, Z_ORDER, FILE_DIR, FIELD, COUNT) VALUES('%d', '%s', '%s', '%d', '%d', '%d', '%s', '%s', '%d')", idx, name, type, xpos, ypos, order, fileDir, field, count);
+
+	query_stat = mysql_query(connection, query);
+
+	if (query_stat != 0)
+	{
+		fprintf(stderr, "Mysql Insert query error : %s\n", mysql_error(&conn));
+		fprintf(stderr, "Sql : %s\n", query);
+		return -1;
+	}
+
+	return 1;
+}
+
+int deleteSql_inventoryItem(StructCustomObject structCustomObject)
+{
+	char query[QUERY_BUF_SIZE];
+
+	int idx = structCustomObject.idx;
+	char name[50];
+	strcpy(name, structCustomObject.name);
+	char type[50];
+	strcpy(type, structCustomObject.type);
+	int xpos = structCustomObject.xpos;
+	int ypos = structCustomObject.ypos;
+	int order = structCustomObject.order;
+	char fileDir[100];
+	strcpy(fileDir, structCustomObject.fileDir);
+	int count = structCustomObject.count;
+
+	sprintf(query, "DELETE FROM INVENTORY_INFO WHERE IDX = '%d'", idx);
+
+	query_stat = mysql_query(connection, query);
+
+	if (query_stat != 0)
+	{
+		fprintf(stderr, "Mysql Delete query error : %s\n", mysql_error(&conn));
+		fprintf(stderr, "Sql : %s\n", query);
+		return -1;
+	}
+
+	return 1;
+}
+
+MYSQL_RES * selectSql_userField_info(int sock)
+{
+	char query[QUERY_BUF_SIZE];
+
+	sprintf(query, "SELECT FIELD FROM USER_LIST WHERE SOCK = '%d'", sock);
+
+	query_stat = mysql_query(connection, query);
+	if (query_stat != 0)
+	{
+		fprintf(stderr, "Mysql select query error : %s\n", mysql_error(&conn));
+		fprintf(stderr, "Sql : %s\n", query);
+	}
+
+	sql_result = mysql_store_result(connection);
+
+	return sql_result;
 }

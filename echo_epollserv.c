@@ -25,6 +25,7 @@
 #define REQUEST_FIELD_INFO				11
 #define REQUEST_INVENTORY_ITEM_INFO		12
 #define MOVE_INVENTORY_ITEM				13
+#define THROW_ITEM						14
 
 #define CUR_PATH						"/home/gkf9876/server/Resources/"
 //#define CUR_PATH						"/home/pi/server/Resources/"
@@ -530,6 +531,23 @@ int main(int argc, char * argv[])
 						updateInventoryItem(ep_events[i].data.fd, *imsiItemInfo2);
 
 						free(imsiItemInfo2);
+						break;
+					case THROW_ITEM:
+						printf("code : %d, content : %s\n", code, readBuf);
+						StructCustomObject * imsiItemInfo3 = (StructCustomObject*)malloc(sizeof(StructCustomObject));
+						memcpy(imsiItemInfo3, readBuf, sizeof(StructCustomObject));
+
+						//유저가 위치한 필드명을 불러온다.
+						sql_result = selectSql_userField_info(ep_events[i].data.fd);
+						sql_row = mysql_fetch_row(sql_result);
+
+						//맵에 아이템을 추가한다.
+						insertSql_mapObject(sql_row[0], *imsiItemInfo3);
+
+						//인벤토리창의 아이템을 지운다.
+						deleteSql_inventoryItem(*imsiItemInfo3);
+
+						free(imsiItemInfo3);
 						break;
 					default:
 						printf("code : %d, content : %s\n", code, readBuf);

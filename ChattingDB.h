@@ -70,4 +70,13 @@ MYSQL_RES * selectSql_inventory_info(char * userName);
 //인벤토리의 아이템정보를 업데이트
 int updateInventoryItem(int sock, StructCustomObject structCustomObject);
 
+//맵에 아이템을 추가한다.
+int insertSql_mapObject(char * field, StructCustomObject structCustomObject);
+
+//인벤토리의 아이템을 지움
+int deleteSql_inventoryItem(StructCustomObject structCustomObject);
+
+//유저가 위치한 맵 이름을 불러온다.
+MYSQL_RES * selectSql_userField_info(int sock);
+
 #endif
