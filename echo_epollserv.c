@@ -24,6 +24,7 @@
 #define DELETE_FIELD_ITEM				10
 #define REQUEST_FIELD_INFO				11
 #define REQUEST_INVENTORY_ITEM_INFO		12
+#define MOVE_INVENTORY_ITEM				13
 
 #define CUR_PATH						"/home/gkf9876/server/Resources/"
 //#define CUR_PATH						"/home/pi/server/Resources/"
@@ -519,6 +520,16 @@ int main(int argc, char * argv[])
 							printf("Request Inventory Info Send Error!!\n");
 
 						free(imsiSendBuf2);
+						break;
+					case MOVE_INVENTORY_ITEM:
+						printf("code : %d, content : %s\n", code, readBuf);
+						StructCustomObject * imsiItemInfo2 = (StructCustomObject*)malloc(sizeof(StructCustomObject));
+						memcpy(imsiItemInfo2, readBuf, sizeof(StructCustomObject));
+
+						//인벤토리의 아이템 정보를 수정한다.
+						updateInventoryItem(ep_events[i].data.fd, *imsiItemInfo2);
+
+						free(imsiItemInfo2);
 						break;
 					default:
 						printf("code : %d, content : %s\n", code, readBuf);

@@ -67,4 +67,7 @@ int insertInventoryItem(int sock, StructCustomObject structCustomObject);
 //인벤토리 정보를 불러온다.
 MYSQL_RES * selectSql_inventory_info(char * userName);
 
+//인벤토리의 아이템정보를 업데이트
+int updateInventoryItem(int sock, StructCustomObject structCustomObject);
+
 #endif

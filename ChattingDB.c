@@ -391,3 +391,27 @@ MYSQL_RES * selectSql_inventory_info(char * userName)
 
 	return sql_result;
 }
+
+int updateInventoryItem(int sock, StructCustomObject structCustomObject)
+{
+	char query[QUERY_BUF_SIZE];
+	int xpos = structCustomObject.xpos;
+	int ypos = structCustomObject.ypos;
+	int count = structCustomObject.count;
+	int idx = structCustomObject.idx;
+	char name[50];
+	strcpy(name, structCustomObject.name);
+
+	sprintf(query, "UPDATE INVENTORY_INFO SET XPOS = '%d', YPOS = '%d', COUNT = '%d' WHERE IDX = '%d' AND NAME = '%s' AND USER = (SELECT ID FROM USER_LIST WHERE SOCK = '%d' AND LOGIN = '1')", xpos, ypos, count, idx, name, sock);
+
+	query_stat = mysql_query(connection, query);
+
+	if (query_stat != 0)
+	{
+		fprintf(stderr, "Mysql Update query error : %s\n", mysql_error(&conn));
+		fprintf(stderr, "Sql : %s\n", query);
+		return -1;
+	}
+
+	return 1;
+}
