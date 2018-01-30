@@ -547,6 +547,9 @@ int main(int argc, char * argv[])
 						//인벤토리창의 아이템을 지운다.
 						deleteSql_inventoryItem(*imsiItemInfo3);
 
+						//다른 유저에게 알림
+						userInteraction(ep_events[i].data.fd, code, readBuf, sizeof(StructCustomObject));
+
 						free(imsiItemInfo3);
 						break;
 					default:
