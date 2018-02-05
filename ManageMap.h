@@ -27,4 +27,7 @@ int insertMapMonster(char * field, char * name, int xpos, int ypos);
 //맵의 몬스터 정보를 확인
 MYSQL_RES * selectSql_MapMonster(char * field);
 
+//맵관리 쓰레드
+void * manageMapThread_main(void * arg);
+
 #endif

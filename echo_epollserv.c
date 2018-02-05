@@ -45,9 +45,6 @@ int SeparateString(char * str, char(*arr)[BUF_SIZE], int arrLen, char flag);
 void IntToChar(int value, char * result);
 void CharToInt(char * value, int * result);
 
-//맵관리 쓰레드
-void * manageMapThread_main(void * arg);
-
 int main(int argc, char * argv[])
 {
 	int serv_sock, cInt_sock;
@@ -725,79 +722,4 @@ void CharToInt(char * value, int * result)
 	*result += (int)(((unsigned char)value[1] << 16) & 0x00ff0000);
 	*result += (int)(((unsigned char)value[2] << 8) & 0x0000ff00);
 	*result += (unsigned char)value[3];
-}
-
-//맵관리 쓰레드
-void * manageMapThread_main(void * arg)
-{
-	MYSQL_RES   	*manageMap_sql_result;
-	MYSQL_ROW   	manageMap_sql_row;
-	MYSQL_RES   	*imsiManageMap_sql_result;
-	MYSQL_ROW   	imsiManageMap_sql_row;
-
-	char field[100];
-	int currentMonster1Count;
-	int currentMonster2Count;
-	int currentMonster3Count;
-	int monster1Count;
-	int monster2Count;
-	int monster3Count;
-
-	srand(time(NULL));
-
-	while (openMySQL_manageMap() == -1)
-	{
-		printf("MySQL Connectioning...\n");
-	}
-
-	while (1)
-	{
-		printf("manageMapThread_main run!\n");
-
-		//현재 맵에 있는 유저 목록 출력
-		manageMap_sql_result = selectSql_mapMonsterList();
-
-		while ((manageMap_sql_row = mysql_fetch_row(manageMap_sql_result)) != NULL)
-		{
-			strcpy(field, manageMap_sql_row[0]);
-			currentMonster1Count = atoi(manageMap_sql_row[1]);
-			currentMonster2Count = atoi(manageMap_sql_row[2]);
-			currentMonster3Count = atoi(manageMap_sql_row[3]);
-			monster1Count = atoi(manageMap_sql_row[4]);
-			monster2Count = atoi(manageMap_sql_row[5]);
-			monster3Count = atoi(manageMap_sql_row[6]);
-
-			//현재 맵의 몬스터 목록을 불러온다.
-			imsiManageMap_sql_result = selectSql_MapMonster(field);
-
-			while ((imsiManageMap_sql_row = mysql_fetch_row(imsiManageMap_sql_result)) != NULL)
-			{
-				for (int i = currentMonster1Count; i < monster1Count; i++)
-				{
-					int x = rand() % 42;
-					int y = rand() % 16;
-					insertMapMonster(field, imsiManageMap_sql_row[2], x, y);
-				}
-
-				for (int i = currentMonster2Count; i < monster2Count; i++)
-				{
-					int x = rand() % 42;
-					int y = rand() % 16;
-					insertMapMonster(field, imsiManageMap_sql_row[3], x, y);
-				}
-
-				for (int i = currentMonster3Count; i < monster3Count; i++)
-				{
-					int x = rand() % 42;
-					int y = rand() % 16;
-					insertMapMonster(field, imsiManageMap_sql_row[4], x, y);
-				}
-			}
-		}
-		mysql_free_result(manageMap_sql_result);
-
-		sleep(5);
-	}
-
-	closeMySQL_manageMap();
 }
