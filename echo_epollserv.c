@@ -439,13 +439,6 @@ int main(int argc, char * argv[])
 						else
 							printf("File Send Fail! : %s\n", readBuf);
 
-						/*for (int i = 0; i < size; i++)
-						{
-							printf("%d\t", (unsigned char)fileBuf[i]);
-							if (i % 20 == 0)
-								printf("\n");
-						}*/
-
 						free(fileBuf);
 						close(fp);
 						break;

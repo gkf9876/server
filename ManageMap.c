@@ -135,8 +135,6 @@ void * manageMapThread_main(void * arg)
 
 	while (1)
 	{
-		printf("manageMapThread_main run!\n");
-
 		//현재 맵에 있는 유저 목록 출력
 		manageMap_sql_result = selectSql_mapMonsterList();
 
@@ -173,7 +171,7 @@ void * manageMapThread_main(void * arg)
 						y = rand() % m->height;
 
 						if (dump_map(m, 3, x, y) == 0 && dump_map(m, 0, x, y) == 130)
-							insertMapMonster(field, imsiManageMap_sql_row[2], x, y);
+							insertMapMonster(field, imsiManageMap_sql_row[2], x, (m->height - (y + 1)));
 						else
 							i--;
 					}
@@ -186,7 +184,7 @@ void * manageMapThread_main(void * arg)
 						y = rand() % m->height;
 
 						if (dump_map(m, 3, x, y) == 0 && dump_map(m, 0, x, y) == 130)
-							insertMapMonster(field, imsiManageMap_sql_row[3], x, y);
+							insertMapMonster(field, imsiManageMap_sql_row[3], x, (m->height - (y + 1)));
 						else
 							i--;
 					}
@@ -199,7 +197,7 @@ void * manageMapThread_main(void * arg)
 						y = rand() % m->height;
 
 						if (dump_map(m, 3, x, y) == 0 && dump_map(m, 0, x, y) == 130)
-							insertMapMonster(field, imsiManageMap_sql_row[4], x, y);
+							insertMapMonster(field, imsiManageMap_sql_row[4], x, (m->height - (y + 1)));
 						else
 							i--;
 					}
