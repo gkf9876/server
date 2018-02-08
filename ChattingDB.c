@@ -34,7 +34,7 @@ int closeMySQL_chatting()
 		return -1;	
 }
 
-MYSQL_RES * selectSql_isUser(char * user)
+int selectSql_isUser(char * user)
 {
 	char query[QUERY_BUF_SIZE];
 
@@ -48,11 +48,12 @@ MYSQL_RES * selectSql_isUser(char * user)
 	}
 
 	sql_result = mysql_store_result(connection);
+	sql_row = mysql_fetch_row(sql_result);
 
-	return sql_result;
+	return atoi(sql_row[0]);
 }
 
-MYSQL_RES * selectSql_UserInfo(int sock)
+StructCustomUser * selectSql_UserInfo(int sock)
 {
 	char query[QUERY_BUF_SIZE];
 
@@ -63,11 +64,23 @@ MYSQL_RES * selectSql_UserInfo(int sock)
 	{
 		fprintf(stderr, "Mysql select query error : %s\n", mysql_error(&conn));
 		fprintf(stderr, "Sql : %s\n", query);
+		return NULL;
 	}
 
 	sql_result = mysql_store_result(connection);
+	sql_row = mysql_fetch_row(sql_result);
 
-	return sql_result;
+	StructCustomUser * user = (StructCustomUser*)malloc(sizeof(StructCustomUser));
+	user->sock = sock;
+	strcpy(user->name, sql_row[0]);
+	user->xpos = atoi(sql_row[1]);
+	user->ypos = atoi(sql_row[2]);
+	strcpy(user->field, sql_row[3]);
+	user->seeDirection = atoi(sql_row[4]);
+
+	mysql_free_result(sql_result);
+
+	return user;
 }
 
 int insertSql_chatting(char * field, char * name, char * content)
@@ -120,7 +133,7 @@ MYSQL_RES * selectSql_chatting(char * userName)
 	return sql_result;
 }
 
-int updateSql_UserLogin(User user)
+int updateSql_UserLogin(StructCustomUser user)
 {
 	char query[QUERY_BUF_SIZE];
 
@@ -156,11 +169,11 @@ int updateSql_UserLogout(int sock)
 	return 1;
 }
 
-int updateUserMove(char * userName, int xpos, int ypos, char * field, int seeDirection)
+int updateUserMove(StructCustomUser structCustomUser)
 {
 	char query[QUERY_BUF_SIZE];
 
-	sprintf(query, "UPDATE USER_LIST SET XPOS = '%d', YPOS = '%d', FIELD = '%s', SEEDIRECTION = '%d' WHERE ID = BINARY('%s') AND LOGIN = '1'", xpos, ypos, field, seeDirection, userName);
+	sprintf(query, "UPDATE USER_LIST SET XPOS = '%d', YPOS = '%d', FIELD = '%s', SEEDIRECTION = '%d' WHERE ID = BINARY('%s') AND LOGIN = '1'", structCustomUser.xpos, structCustomUser.ypos, structCustomUser.field, structCustomUser.seeDirection, structCustomUser.name);
 
 	query_stat = mysql_query(connection, query);
 

@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include "CustomObject.h"
+#include "CustomUser.h"
 
 #define DB_HOST "127.0.0.1"
 #define DB_USER "gkf9876"
@@ -30,18 +31,18 @@ typedef struct user
 int openMySQL_chatting();
 int closeMySQL_chatting();
 
-MYSQL_RES * selectSql_isUser(char * user);
-MYSQL_RES * selectSql_UserInfo(int sock);
+int selectSql_isUser(char * user);
+StructCustomUser * selectSql_UserInfo(int sock);
 
 int insertSql_chatting(char * field, char * name, char * content);
 int deleteSql_chatting(char * field);
 int updateSql_chatting(char * field);
 MYSQL_RES * selectSql_chatting(char * userName);
 
-int updateSql_UserLogin(User user);
+int updateSql_UserLogin(StructCustomUser user);
 int updateSql_UserLogout(int sock);
 
-int updateUserMove(char * userName, int xpos, int ypos, char * field, int seeDirection);
+int updateUserMove(StructCustomUser structCustomUser);
 MYSQL_RES * selectSql_fieldUsers(int sock);
 MYSQL_RES * selectSql_User(int sock);
 

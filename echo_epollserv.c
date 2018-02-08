@@ -149,21 +149,15 @@ int main(int argc, char * argv[])
 					}
 
 					//종료하는 유저 아이디 불러옴.
-					sql_result1 = selectSql_User(sock);
-					char imsiName[50];
-					int imsiXpos, imsiYpos;
-
-					while ((sql_row1 = mysql_fetch_row(sql_result1)) != NULL)
-					{
-						strcpy(imsiName, sql_row1[0]);
-						imsiXpos = atoi(sql_row1[1]);
-						imsiYpos = atoi(sql_row1[2]);
-					}
-					mysql_free_result(sql_result1);
+					StructCustomUser * exitUser = selectSql_UserInfo(sock);
+					exitUser->action = ACTION_MAP_OUT;
 
 					//종료시 해당 맵의 다른 유저들에게 자기정보를 보내준다.
-					sprintf(sendBuf, "out\n%s\n%d\n%d", imsiName, imsiXpos, imsiYpos);
-					userInteraction(sock, OTHER_USER_MAP_MOVE, sendBuf, strlen(sendBuf));
+					memcpy(sendBuf, exitUser, sizeof(StructCustomUser));
+					userInteraction(sock, OTHER_USER_MAP_MOVE, sendBuf, sizeof(StructCustomUser));
+
+					if(exitUser != NULL)
+						free(exitUser);
 
 					updateSql_UserLogout(sock);
 				}
@@ -207,21 +201,12 @@ int main(int argc, char * argv[])
 					}
 
 					//종료하는 유저 아이디 불러옴.
-					sql_result = selectSql_User(ep_events[i].data.fd);
-					char imsiName[50];
-					int imsiXpos, imsiYpos;
-
-					while ((sql_row = mysql_fetch_row(sql_result)) != NULL)
-					{
-						strcpy(imsiName, sql_row[0]);
-						imsiXpos = atoi(sql_row[1]);
-						imsiYpos = atoi(sql_row[2]);
-					}
-					mysql_free_result(sql_result);
+					StructCustomUser * exitUser = selectSql_UserInfo(ep_events[i].data.fd);
+					exitUser->action = ACTION_MAP_OUT;
 
 					//종료시 해당 맵의 다른 유저들에게 자기정보를 보내준다.
-					sprintf(sendBuf, "out\n%s\n%d\n%d", imsiName, imsiXpos, imsiYpos);
-					userInteraction(ep_events[i].data.fd, OTHER_USER_MAP_MOVE, sendBuf, strlen(sendBuf));
+					memcpy(sendBuf, exitUser, sizeof(StructCustomUser));
+					userInteraction(ep_events[i].data.fd, OTHER_USER_MAP_MOVE, sendBuf, sizeof(StructCustomUser));
 
 					updateSql_UserLogout(ep_events[i].data.fd);
 				}
@@ -231,13 +216,13 @@ int main(int argc, char * argv[])
 					{
 					case REQUEST_USER_INFO:			//유저 정보 요청시
 						printf("code : %d, content : %s\n", code, readBuf);
-						sql_result = selectSql_UserInfo(ep_events[i].data.fd);
-						sql_row = mysql_fetch_row(sql_result);
 
-						sprintf(sendBuf, "%s\n%s\n%s\n%s\n%s", sql_row[0], sql_row[1], sql_row[2], sql_row[3], sql_row[4]);
-						str_len = sendCommand(ep_events[i].data.fd, code, sendBuf, strlen(sendBuf));
+						StructCustomUser * user = selectSql_UserInfo(ep_events[i].data.fd);
+						memcpy(sendBuf, user, sizeof(StructCustomUser));
+						str_len = sendCommand(ep_events[i].data.fd, code, sendBuf, sizeof(StructCustomUser));
 
-						mysql_free_result(sql_result);
+						if(user != NULL)
+							free(user);
 						break;
 					case CHATTING_PROCESS:			//채팅시
 						printf("code : %d, content : %s\n", code, readBuf);
@@ -257,99 +242,123 @@ int main(int argc, char * argv[])
 						break;
 					case REQUEST_LOGIN:				//로그인 승인시
 						printf("code : %d, content : %s\n", code, readBuf);
-						sql_result = selectSql_isUser(readBuf);
-						sql_row = mysql_fetch_row(sql_result);
-
-						int count = atoi(sql_row[0]);
+						int count = selectSql_isUser(readBuf);
 
 						if (count > 0)
 						{
 							str_len = sendCommand(ep_events[i].data.fd, code, "login okey", strlen("login okey"));
 
 							//로그인상태를 바꾼다.
-							User user;
+							StructCustomUser user;
 							strcpy(user.name, readBuf);
 							user.sock = ep_events[i].data.fd;
 							updateSql_UserLogin(user);
 
 							//해당 유저의 정보를 가져온다.
-							sql_result = selectSql_UserInfo(ep_events[i].data.fd);
-							sql_row = mysql_fetch_row(sql_result);
+							StructCustomUser * structCustomUser = selectSql_UserInfo(ep_events[i].data.fd);
 
-							user.xpos = atoi(sql_row[1]);
-							user.ypos = atoi(sql_row[2]);
-							strcpy(user.field, sql_row[3]);
-							user.seeDirection = atoi(sql_row[4]);
+							user.xpos = structCustomUser->xpos;
+							user.ypos = structCustomUser->ypos;
+							strcpy(user.field, structCustomUser->field);
+							user.seeDirection = structCustomUser->seeDirection;
+
+							if(structCustomUser != NULL)
+								free(structCustomUser);
 
 							printf("NEW User IN!! (name : %s xpos : %d, ypos : %d)\n", user.name, user.xpos, user.ypos);
 
 							//접속시 해당 맵의 다른 유저들에게 자기정보를 보내준다.
-							sprintf(sendBuf, "in\n%s\n%d\n%d\n%d", user.name, user.xpos, user.ypos, user.seeDirection);
+							user.action = ACTION_MAP_IN;
+							memcpy(sendBuf, &user, sizeof(StructCustomUser));
 							sql_result = selectSql_fieldUsers(ep_events[i].data.fd);
 
 							char imsiSendBuf[BUF_SIZE];
 
 							while ((sql_row = mysql_fetch_row(sql_result)) != NULL)
 							{
-								str_len = sendCommand(atoi(sql_row[0]), OTHER_USER_MAP_MOVE, sendBuf, strlen(sendBuf));
+								str_len = sendCommand(atoi(sql_row[0]), OTHER_USER_MAP_MOVE, sendBuf, sizeof(StructCustomUser));
 
 								//같은맵의 다른 유저 정보를 전해준다.
-								sprintf(imsiSendBuf, "in\n%s\n%s\n%s\n%s", sql_row[1], sql_row[2], sql_row[3], sql_row[4]);
-								sendCommand(ep_events[i].data.fd, OTHER_USER_MAP_MOVE, imsiSendBuf, strlen(imsiSendBuf));
+								StructCustomUser fieldUser;
+								fieldUser.sock = atoi(sql_row[0]);
+								strcpy(fieldUser.name, sql_row[1]);
+								fieldUser.xpos = atoi(sql_row[2]);
+								fieldUser.ypos = atoi(sql_row[3]);
+								fieldUser.seeDirection = atoi(sql_row[4]);
+								fieldUser.action = ACTION_MAP_IN;
+
+								memcpy(imsiSendBuf, &fieldUser, sizeof(StructCustomUser));
+								sendCommand(ep_events[i].data.fd, OTHER_USER_MAP_MOVE, imsiSendBuf, sizeof(StructCustomUser));
 							}
+
+							mysql_free_result(sql_result);
 						}
 						else
 							str_len = sendCommand(ep_events[i].data.fd, code, "login fail", strlen("login fail"));
 
-						mysql_free_result(sql_result);
 						break;
 					case USER_MOVE_UPDATE:
-						//이동한 유저 정보 가져옴
-						len = SeparateString(readBuf, userMoveInfo, sizeof(userMoveInfo) / BUF_SIZE, '\n');
-						char fromMap[100];
-						strcpy(name, userMoveInfo[0]);
-						int regionXpos = atoi(userMoveInfo[1]);
-						int regionYpos = atoi(userMoveInfo[2]);
-						strcpy(fromMap, userMoveInfo[3]);
-						xpos = atoi(userMoveInfo[4]);
-						ypos = atoi(userMoveInfo[5]);
-						strcpy(field, userMoveInfo[6]);
-						int seeDirection = atoi(userMoveInfo[7]);
-
-						//접속시 해당 맵의 다른 유저들에게 자기정보를 보내준다.
-						if (strcmp(fromMap, field))
 						{
-							//맵에서 나갈때 나가기전에 다른 유저들한테 보냄.
-							sprintf(sendBuf, "out\n%s\n%d\n%d", name, regionXpos, regionYpos);
-							userInteraction(ep_events[i].data.fd, OTHER_USER_MAP_MOVE, sendBuf, strlen(sendBuf));
-							updateUserMove(name, xpos, ypos, field, seeDirection);
+							//이동한 유저 정보 가져옴
+							StructCustomUser regionUser;
+							StructCustomUser currentUser;
 
-							//맵에서 나가고 나서 다른 맵에 진입할때 다른 유저들한테 보냄.
-							sprintf(sendBuf, "in\n%s\n%d\n%d\n%d", name, xpos, ypos, seeDirection);
-							sql_result = selectSql_fieldUsers(ep_events[i].data.fd);
+							len = SeparateString(readBuf, userMoveInfo, sizeof(userMoveInfo) / BUF_SIZE, '\n');
 
-							char imsiSendBuf[BUF_SIZE];
+							strcpy(currentUser.name, userMoveInfo[0]);
 
-							while ((sql_row = mysql_fetch_row(sql_result)) != NULL)
+							strcpy(regionUser.field, userMoveInfo[3]);
+
+							currentUser.xpos = atoi(userMoveInfo[4]);
+							currentUser.ypos = atoi(userMoveInfo[5]);
+							strcpy(currentUser.field, userMoveInfo[6]);
+							currentUser.seeDirection = atoi(userMoveInfo[7]);
+
+							//접속시 해당 맵의 다른 유저들에게 자기정보를 보내준다.
+							if (strcmp(regionUser.field, currentUser.field))
 							{
-								str_len = sendCommand(atoi(sql_row[0]), OTHER_USER_MAP_MOVE, sendBuf, strlen(sendBuf));
-								printf("userName : %s, xpos : %d, ypos : %d, field : %s\n", name, xpos, ypos, field);
+								//맵에서 나갈때 나가기전에 다른 유저들한테 보냄.
+								currentUser.action = ACTION_MAP_OUT;
+								memcpy(sendBuf, &currentUser, sizeof(StructCustomUser));
+								userInteraction(ep_events[i].data.fd, OTHER_USER_MAP_MOVE, sendBuf, sizeof(StructCustomUser));
+								updateUserMove(currentUser);
 
-								//이동한 맵의 유저들 정보를 알려준다.
-								sprintf(imsiSendBuf, "in\n%s\n%s\n%s\n%s", sql_row[1], sql_row[2], sql_row[3], sql_row[4]);
-								sendCommand(ep_events[i].data.fd, OTHER_USER_MAP_MOVE, imsiSendBuf, strlen(imsiSendBuf));
+								//맵에서 나가고 나서 다른 맵에 진입할때 다른 유저들한테 보냄.
+								currentUser.action = ACTION_MAP_IN;
+								memcpy(sendBuf, &currentUser, sizeof(StructCustomUser));
+								sql_result = selectSql_fieldUsers(ep_events[i].data.fd);
+
+								char imsiSendBuf[BUF_SIZE];
+
+								while ((sql_row = mysql_fetch_row(sql_result)) != NULL)
+								{
+									str_len = sendCommand(atoi(sql_row[0]), OTHER_USER_MAP_MOVE, sendBuf, sizeof(StructCustomUser));
+									printf("userName : %s, xpos : %d, ypos : %d, field : %s\n", currentUser.name, currentUser.xpos, currentUser.ypos, currentUser.field);
+
+									//이동한 맵의 유저들 정보를 알려준다.
+									StructCustomUser fieldUser;
+									fieldUser.sock = atoi(sql_row[0]);
+									strcpy(fieldUser.name, sql_row[1]);
+									fieldUser.xpos = atoi(sql_row[2]);
+									fieldUser.ypos = atoi(sql_row[3]);
+									fieldUser.seeDirection = atoi(sql_row[4]);
+									fieldUser.action = ACTION_MAP_IN;
+									memcpy(imsiSendBuf, &fieldUser, sizeof(StructCustomUser));
+									sendCommand(ep_events[i].data.fd, OTHER_USER_MAP_MOVE, imsiSendBuf, sizeof(StructCustomUser));
+								}
+								mysql_free_result(sql_result);
 							}
-							mysql_free_result(sql_result);
-						}
-						else
-						{
-							//현재 맵에서 이동할때.
-							updateUserMove(name, xpos, ypos, field, seeDirection);
-							sprintf(sendBuf, "move\n%s\n%d\n%d\n%d", name, xpos, ypos, seeDirection);
+							else
+							{
+								//현재 맵에서 이동할때.
+								updateUserMove(currentUser);
+								currentUser.action = ACTION_MAP_MOVE;
+								memcpy(sendBuf, &currentUser, sizeof(StructCustomUser));
 
-							//다른 유저에게 알림
-							userInteraction(ep_events[i].data.fd, OTHER_USER_MAP_MOVE, sendBuf, strlen(sendBuf));
-						} 
+								//다른 유저에게 알림
+								userInteraction(ep_events[i].data.fd, OTHER_USER_MAP_MOVE, sendBuf, sizeof(StructCustomUser));
+							}
+						}
 						break;
 					case OTHER_USER_MAP_MOVE:
 						break;
@@ -372,7 +381,7 @@ int main(int argc, char * argv[])
 						{
 							printf("code : %d, content : %s\n", code, readBuf);
 							//로그인상태를 바꾼다.
-							User user;
+							StructCustomUser user;
 							strncpy(user.name, readBuf, 50);
 							user.sock = ep_events[i].data.fd;
 							updateSql_UserLogin(user);
