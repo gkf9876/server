@@ -39,11 +39,11 @@ int deleteSql_chatting(char * field);
 int updateSql_chatting(char * field);
 MYSQL_RES * selectSql_chatting(char * userName);
 
-int updateSql_UserLogin(StructCustomUser user);
+int updateSql_UserLogin(int sock, char * name);
 int updateSql_UserLogout(int sock);
 
 int updateUserMove(StructCustomUser structCustomUser);
-MYSQL_RES * selectSql_fieldUsers(int sock);
+StructCustomUserList * selectSql_fieldUsers(int sock);
 MYSQL_RES * selectSql_User(int sock);
 
 int updateDate(int idx);

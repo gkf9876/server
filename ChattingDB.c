@@ -133,11 +133,11 @@ MYSQL_RES * selectSql_chatting(char * userName)
 	return sql_result;
 }
 
-int updateSql_UserLogin(StructCustomUser user)
+int updateSql_UserLogin(int sock, char * name)
 {
 	char query[QUERY_BUF_SIZE];
 
-	sprintf(query, "UPDATE USER_LIST SET SOCK = '%d', LOGIN = '1', LAST_LOGIN = SYSDATE() WHERE ID = BINARY('%s')", user.sock, user.name);
+	sprintf(query, "UPDATE USER_LIST SET SOCK = '%d', LOGIN = '1', LAST_LOGIN = SYSDATE() WHERE ID = BINARY('%s')", sock, name);
 
 	query_stat = mysql_query(connection, query);
 
@@ -187,7 +187,7 @@ int updateUserMove(StructCustomUser structCustomUser)
 	return 1;
 }
 
-MYSQL_RES * selectSql_fieldUsers(int sock)
+StructCustomUserList * selectSql_fieldUsers(int sock)
 {
 	char query[QUERY_BUF_SIZE];
 
@@ -202,7 +202,24 @@ MYSQL_RES * selectSql_fieldUsers(int sock)
 
 	sql_result = mysql_store_result(connection);
 
-	return sql_result;
+	StructCustomUserList * userList = (StructCustomUserList *)malloc(sizeof(StructCustomUserList));
+	initStructCustomUserList(userList);
+
+	while ((sql_row = mysql_fetch_row(sql_result)) != NULL)
+	{
+		StructCustomUser * user = (StructCustomUser*)malloc(sizeof(StructCustomUser));
+		user->sock = atoi(sql_row[0]);
+		strcpy(user->name, sql_row[1]);
+		user->xpos = atoi(sql_row[2]);
+		user->ypos = atoi(sql_row[3]);
+		user->seeDirection = atoi(sql_row[4]);
+
+		insertStructCustomUserList(userList, user);
+	}
+
+	mysql_free_result(sql_result);
+
+	return userList;
 }
 
 MYSQL_RES * selectSql_User(int sock)

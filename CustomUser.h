@@ -6,6 +6,7 @@
 #define ACTION_MAP_IN		0
 #define ACTION_MAP_MOVE		1
 #define ACTION_MAP_OUT		2
+#define ACTION_MAP_POTAL	3
 
 typedef struct
 {
@@ -18,5 +19,19 @@ typedef struct
 	int seeDirection;
 	int action;
 }StructCustomUser;
+
+typedef struct
+{
+	StructCustomUser * value;
+	struct StructCustomUserList * next;
+}StructCustomUserList;
+
+void initStructCustomUserList(StructCustomUserList * structCustomUserList);
+
+void insertStructCustomUserList(StructCustomUserList * list, StructCustomUser * user);
+
+StructCustomUser * getStructCustomUserList(StructCustomUserList * structCustomUserList);
+
+void clearStructCustomUserList(StructCustomUserList * structCustomUserList);
 
 #endif
