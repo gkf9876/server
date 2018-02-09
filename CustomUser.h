@@ -2,6 +2,7 @@
 #define __CUSTOM_USER_H_
 
 #include <stdio.h>
+#include <stdlib.h>
 
 #define ACTION_MAP_IN		0
 #define ACTION_MAP_MOVE		1
@@ -20,10 +21,10 @@ typedef struct
 	int action;
 }StructCustomUser;
 
-typedef struct
+typedef struct structCustomUserList
 {
 	StructCustomUser * value;
-	struct StructCustomUserList * next;
+	struct structCustomUserList * next;
 }StructCustomUserList;
 
 void initStructCustomUserList(StructCustomUserList * structCustomUserList);

@@ -7,6 +7,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <time.h>
 
 #define DB_HOST "127.0.0.1"
 #define DB_USER "gkf9876"

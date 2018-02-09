@@ -2,6 +2,7 @@
 #define __CUSTOM_OBJECT_H_
 
 #include <stdio.h>
+#include <stdlib.h>
 
 typedef struct
 {
@@ -14,5 +15,19 @@ typedef struct
 	char fileDir[100];
 	int count;
 }StructCustomObject;
+
+typedef struct structCustomObjectList
+{
+	StructCustomObject * value;
+	struct structCustomObjectList * next;
+}StructCustomObjectList;
+
+void initStructCustomObjectList(StructCustomObjectList * structCustomUserList);
+
+void insertStructCustomObjectList(StructCustomObjectList * list, StructCustomObject * user);
+
+StructCustomObject * getStructCustomObjectList(StructCustomObjectList * structCustomUserList);
+
+void clearStructCustomObjectList(StructCustomObjectList * structCustomUserList);
 
 #endif

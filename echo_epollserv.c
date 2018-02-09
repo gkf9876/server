@@ -11,6 +11,7 @@
 
 #include "ChattingDB.h"
 #include "CustomObject.h"
+#include "CustomUser.h"
 #include "ManageMap.h"
 
 #define BUF_SIZE 1024
@@ -45,6 +46,8 @@ int SeparateString(char * str, char(*arr)[BUF_SIZE], int arrLen, char flag);
 void IntToChar(int value, char * result);
 void CharToInt(char * value, int * result);
 
+void sendFileData(int sock, int code, char * filename);
+
 int main(int argc, char * argv[])
 {
 	int serv_sock, cInt_sock;
@@ -53,20 +56,13 @@ int main(int argc, char * argv[])
 	int str_len, i;
 	char sendBuf[BUF_SIZE];
 	char readBuf[BUF_SIZE];
-	char * fileBuf;
 	int code;
 	char name[50];
 	char content[100];
-	char cwd[BUF_SIZE];
 
-	char userMoveInfo[20][BUF_SIZE];
 	int len;
-	int xpos;
-	int ypos;
 	char field[100];
 	int dateCount = 0;
-	int fp;
-	int size;
 
 	MYSQL_RES   	*sql_result;
 	MYSQL_ROW   	sql_row;
@@ -284,10 +280,8 @@ int main(int argc, char * argv[])
 					case USER_MOVE_UPDATE:
 						{
 							//이동한 유저 정보 가져옴
-							StructCustomUser regionUser;
 							StructCustomUser currentUser;
 
-							len = SeparateString(readBuf, userMoveInfo, sizeof(userMoveInfo) / BUF_SIZE, '\n');
 							memcpy(&currentUser, readBuf, sizeof(StructCustomUser));
 
 							//접속시 해당 맵의 다른 유저들에게 자기정보를 보내준다.
@@ -359,66 +353,12 @@ int main(int argc, char * argv[])
 					//우저가 타일맵 자료 요청시
 					case REQUEST_TILED_MAP:
 						printf("code : %d, content : %s\n", code, readBuf);
-						strcpy(cwd, CUR_PATH);
-						strcat(cwd, readBuf);
-
-						if ((fp = open(cwd, O_RDONLY)) == -1)
-						{
-							fprintf(stderr, "File Open error : %s\n", cwd);
-							return -1;
-						}
-						
-						lseek(fp, 0, SEEK_END);							// 파일 포인터를 파일의 끝으로 이동시킴
-						size = lseek(fp, 0, SEEK_CUR);					// 파일 포인터의 현재 위치를 얻음
-						fileBuf = (char*)malloc(size + 1);
-						memset(fileBuf, 0, size + 1);					// 파일 크기 + 1바이트만큼 메모리를 0으로 초기화
-						lseek(fp, 0, SEEK_SET);							// 파일 포인터를 파일의 처음으로 이동시킴
-
-						if (read(fp, fileBuf, size) <= 0)
-						{
-							fprintf(stderr, "File Read error : %s\n", readBuf);
-							return -1;
-						}
-
-						if (sendCommand(ep_events[i].data.fd, code, fileBuf, size) != -1)
-							printf("File Send Success! : %s, Size : %d\n", readBuf, size);
-						else
-							printf("File Send Fail! : %s\n", readBuf);
-
-						free(fileBuf);
-						close(fp);
+						sendFileData(ep_events[i].data.fd, code, readBuf);
 						break;
 					//유저가 이미지 자료 요청시
 					case REQUEST_IMAGE:
 						printf("code : %d, content : %s\n", code, readBuf);
-						strcpy(cwd, CUR_PATH);
-						strcat(cwd, readBuf);
-
-						if ((fp = open(cwd, O_RDONLY)) == -1)
-						{
-							fprintf(stderr, "File Open error : %s\n", cwd);
-							return -1;
-						}
-
-						lseek(fp, 0, SEEK_END);							// 파일 포인터를 파일의 끝으로 이동시킴
-						size = lseek(fp, 0, SEEK_CUR);					// 파일 포인터의 현재 위치를 얻음
-						fileBuf = (char*)malloc(size + 1);
-						memset(fileBuf, 0, size + 1);					// 파일 크기 + 1바이트만큼 메모리를 0으로 초기화
-						lseek(fp, 0, SEEK_SET);							// 파일 포인터를 파일의 처음으로 이동시킴
-
-						if (read(fp, fileBuf, size) <= 0)
-						{
-							fprintf(stderr, "File Read error : %s\n", readBuf);
-							return -1;
-						}
-
-						if (sendCommand(ep_events[i].data.fd, code, fileBuf, size) != -1)
-							printf("File Send Success! : %s, Size : %d\n", readBuf, size);
-						else
-							printf("File Send Fail! : %s\n", readBuf);
-
-						free(fileBuf);
-						close(fp);
+						sendFileData(ep_events[i].data.fd, code, readBuf);
 						break;
 					//유저가 땅에 떨어진 아이템을 먹을시
 					case DELETE_FIELD_ITEM:
@@ -696,4 +636,41 @@ void CharToInt(char * value, int * result)
 	*result += (int)(((unsigned char)value[1] << 16) & 0x00ff0000);
 	*result += (int)(((unsigned char)value[2] << 8) & 0x0000ff00);
 	*result += (unsigned char)value[3];
+}
+
+void sendFileData(int sock, int code, char * filename)
+{
+	int fp;
+	int size;
+	char * fileBuf;
+	char cwd[BUF_SIZE];
+
+	strcpy(cwd, CUR_PATH);
+	strcat(cwd, filename);
+
+	if ((fp = open(cwd, O_RDONLY)) == -1)
+	{
+		fprintf(stderr, "File Open error : %s\n", cwd);
+		return;
+	}
+
+	lseek(fp, 0, SEEK_END);							// 파일 포인터를 파일의 끝으로 이동시킴
+	size = lseek(fp, 0, SEEK_CUR);					// 파일 포인터의 현재 위치를 얻음
+	fileBuf = (char*)malloc(size + 1);
+	memset(fileBuf, 0, size + 1);					// 파일 크기 + 1바이트만큼 메모리를 0으로 초기화
+	lseek(fp, 0, SEEK_SET);							// 파일 포인터를 파일의 처음으로 이동시킴
+
+	if (read(fp, fileBuf, size) <= 0)
+	{
+		fprintf(stderr, "File Read error : %s\n", filename);
+		return;
+	}
+
+	if (sendCommand(sock, code, fileBuf, size) != -1)
+		printf("File Send Success! : %s, Size : %d\n", filename, size);
+	else
+		printf("File Send Fail! : %s\n", filename);
+
+	free(fileBuf);
+	close(fp);
 }
