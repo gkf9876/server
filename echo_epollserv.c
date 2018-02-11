@@ -53,15 +53,9 @@ int main(int argc, char * argv[])
 	int serv_sock, cInt_sock;
 	struct sockaddr_in serv_adr, cInt_adr;
 	socklen_t adr_sz;
-	int str_len, i;
 	char sendBuf[BUF_SIZE];
 	char readBuf[BUF_SIZE];
 	int code;
-	char name[50];
-	char content[100];
-
-	int len;
-	char field[100];
 	int dateCount = 0;
 
 	MYSQL_RES   	*sql_result;
@@ -166,7 +160,7 @@ int main(int argc, char * argv[])
 			break;
 		}
 
-		for(i=0; i<event_cnt; i++)
+		for(int i=0; i<event_cnt; i++)
 		{
 			if(ep_events[i].data.fd == serv_sock)
 			{
@@ -179,9 +173,7 @@ int main(int argc, char * argv[])
 			}
 			else
 			{
-				str_len = readCommand(ep_events[i].data.fd, &code, readBuf);
-
-				if(str_len == 0)
+				if(readCommand(ep_events[i].data.fd, &code, readBuf) == 0)
 				{
 					epoll_ctl(epfd, EPOLL_CTL_DEL, ep_events[i].data.fd, NULL);
 					close(ep_events[i].data.fd);
