@@ -53,3 +53,17 @@ void clearStructCustomObjectList(StructCustomObjectList * structCustomObjectList
 		free(deleteInfo);
 	}
 }
+
+int getObjectCount(StructCustomObjectList * structCustomObjectList)
+{
+	StructCustomObjectList * imsiStructCustomObjectList = structCustomObjectList;
+	int count = 0;
+
+	while (imsiStructCustomObjectList->next != NULL)
+	{
+		imsiStructCustomObjectList = imsiStructCustomObjectList->next;
+		count++;
+	}
+
+	return count;
+}

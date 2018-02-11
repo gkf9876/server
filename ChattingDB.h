@@ -17,16 +17,12 @@
 
 #define QUERY_BUF_SIZE 1024
 
-typedef struct user
+typedef struct
 {
-	int sock;
 	char name[50];
-	char password[50];
-	int xpos;
-	int ypos;
+	char content[100];
 	char field[100];
-	int seeDirection;
-}User;
+}StructCustomChatting;
 
 int openMySQL_chatting();
 int closeMySQL_chatting();
@@ -37,14 +33,12 @@ StructCustomUser * selectSql_UserInfo(int sock);
 int insertSql_chatting(char * field, char * name, char * content);
 int deleteSql_chatting(char * field);
 int updateSql_chatting(char * field);
-MYSQL_RES * selectSql_chatting(char * userName);
 
 int updateSql_UserLogin(int sock, char * name);
 int updateSql_UserLogout(int sock);
 
 int updateUserMove(StructCustomUser structCustomUser);
 StructCustomUserList * selectSql_fieldUsers(int sock);
-MYSQL_RES * selectSql_User(int sock);
 
 int updateDate(int idx);
 
@@ -57,7 +51,7 @@ int updateLogoutDateTime(int sock);
 MYSQL_RES * selectSql_comfirmTrueNowLoginUser();
 
 //맵 정보를 가져옴.
-MYSQL_RES * selectSql_field_info(char * field);
+StructCustomObjectList * selectSql_field_info(char * field);
 
 //맵의 아이템을 지움
 int deleteMapObject(int idx);
@@ -66,7 +60,7 @@ int deleteMapObject(int idx);
 int insertInventoryItem(int sock, StructCustomObject structCustomObject);
 
 //인벤토리 정보를 불러온다.
-MYSQL_RES * selectSql_inventory_info(char * userName);
+StructCustomObjectList * selectSql_inventory_info(char * userName);
 
 //인벤토리의 아이템정보를 업데이트
 int updateInventoryItem(int sock, StructCustomObject structCustomObject);
@@ -78,6 +72,6 @@ int insertSql_mapObject(char * field, StructCustomObject structCustomObject);
 int deleteSql_inventoryItem(StructCustomObject structCustomObject);
 
 //유저가 위치한 맵 이름을 불러온다.
-MYSQL_RES * selectSql_userField_info(int sock);
+char * selectSql_userField_info(int sock);
 
 #endif

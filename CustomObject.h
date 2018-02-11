@@ -30,4 +30,6 @@ StructCustomObject * getStructCustomObjectList(StructCustomObjectList * structCu
 
 void clearStructCustomObjectList(StructCustomObjectList * structCustomUserList);
 
+int getObjectCount(StructCustomObjectList * structCustomObjectList);
+
 #endif

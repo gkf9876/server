@@ -37,6 +37,7 @@ int closeMySQL_chatting()
 int selectSql_isUser(char * user)
 {
 	char query[QUERY_BUF_SIZE];
+	int result;
 
 	sprintf(query, "SELECT COUNT(ID) AS COUNT FROM USER_LIST WHERE ID = BINARY('%s') AND LOGIN = 0", user);
 
@@ -45,12 +46,17 @@ int selectSql_isUser(char * user)
 	{
 		fprintf(stderr, "Mysql select query error : %s\n", mysql_error(&conn));
 		fprintf(stderr, "Sql : %s\n", query);
+		return -1;
 	}
 
 	sql_result = mysql_store_result(connection);
 	sql_row = mysql_fetch_row(sql_result);
 
-	return atoi(sql_row[0]);
+	result = atoi(sql_row[0]);
+
+	mysql_free_result(sql_result);
+
+	return result;
 }
 
 StructCustomUser * selectSql_UserInfo(int sock)
@@ -113,24 +119,6 @@ int deleteSql_chatting(char * field)
 
 int updateSql_chatting(char * field)
 {
-}
-
-MYSQL_RES * selectSql_chatting(char * userName)
-{
-	char query[QUERY_BUF_SIZE];
-
-	sprintf(query, "SELECT A.SOCK, A.ID, A.XPOS, A.YPOS, A.FIELD FROM USER_LIST A, (SELECT * FROM USER_LIST WHERE ID = BINARY('%s')) B WHERE A.FIELD = B.FIELD", userName);
-
-	query_stat = mysql_query(connection, query);
-	if (query_stat != 0)
-	{
-		fprintf(stderr, "Mysql select query error : %s\n", mysql_error(&conn));
-		fprintf(stderr, "Sql : %s\n", query);
-	}
-
-	sql_result = mysql_store_result(connection);
-
-	return sql_result;
 }
 
 int updateSql_UserLogin(int sock, char * name)
@@ -198,6 +186,7 @@ StructCustomUserList * selectSql_fieldUsers(int sock)
 	{
 		fprintf(stderr, "Mysql select query error : %s\n", mysql_error(&conn));
 		fprintf(stderr, "Sql : %s\n", query);
+		return NULL;
 	}
 
 	sql_result = mysql_store_result(connection);
@@ -220,24 +209,6 @@ StructCustomUserList * selectSql_fieldUsers(int sock)
 	mysql_free_result(sql_result);
 
 	return userList;
-}
-
-MYSQL_RES * selectSql_User(int sock)
-{
-	char query[QUERY_BUF_SIZE];
-
-	sprintf(query, "SELECT ID,XPOS,YPOS FROM USER_LIST WHERE SOCK = '%d'", sock);
-
-	query_stat = mysql_query(connection, query);
-	if (query_stat != 0)
-	{
-		fprintf(stderr, "Mysql select query error : %s\n", mysql_error(&conn));
-		fprintf(stderr, "Sql : %s\n", query);
-	}
-
-	sql_result = mysql_store_result(connection);
-
-	return sql_result;
 }
 
 int updateDate(int idx)
@@ -271,7 +242,7 @@ int insertUserInfo(char * userName)
 	{
 		if (atoi(sql_row[0]) > 0)
 		{
-			printf("중복되는 아이디입니다.\n");
+			printf("Duplicate ID error\n");
 			return -1;
 		}
 	}
@@ -345,7 +316,7 @@ MYSQL_RES * selectSql_comfirmTrueNowLoginUser()
 	return sql_result;
 }
 
-MYSQL_RES * selectSql_field_info(char * field)
+StructCustomObjectList * selectSql_field_info(char * field)
 {
 	char query[QUERY_BUF_SIZE];
 
@@ -360,7 +331,26 @@ MYSQL_RES * selectSql_field_info(char * field)
 
 	sql_result = mysql_store_result(connection);
 
-	return sql_result;
+	StructCustomObjectList * objectList = (StructCustomObjectList*)malloc(sizeof(StructCustomObjectList));
+	initStructCustomObjectList(objectList);
+
+	while ((sql_row = mysql_fetch_row(sql_result)) != NULL)
+	{
+		StructCustomObject * object = (StructCustomObject*)malloc(sizeof(StructCustomObject));
+		object->idx = atoi(sql_row[0]);
+		strcpy(object->name, sql_row[1]);
+		strcpy(object->type, sql_row[2]);
+		object->xpos = atoi(sql_row[3]);
+		object->ypos = atoi(sql_row[4]);
+		object->order = atoi(sql_row[5]);
+		strcpy(object->fileDir, sql_row[6]);
+		object->count = atoi(sql_row[7]);
+
+		insertStructCustomObjectList(objectList, object);
+	}
+	mysql_free_result(sql_result);
+
+	return objectList;
 }
 
 int deleteMapObject(int idx)
@@ -404,7 +394,7 @@ int insertInventoryItem(int sock, StructCustomObject structCustomObject)
 	return 1;
 }
 
-MYSQL_RES * selectSql_inventory_info(char * userName)
+StructCustomObjectList * selectSql_inventory_info(char * userName)
 {
 	char query[QUERY_BUF_SIZE];
 
@@ -419,7 +409,26 @@ MYSQL_RES * selectSql_inventory_info(char * userName)
 
 	sql_result = mysql_store_result(connection);
 
-	return sql_result;
+	StructCustomObjectList * objectList = (StructCustomObjectList*)malloc(sizeof(StructCustomObjectList));
+	initStructCustomObjectList(objectList);
+
+	while ((sql_row = mysql_fetch_row(sql_result)) != NULL)
+	{
+		StructCustomObject * object = (StructCustomObject*)malloc(sizeof(StructCustomObject));
+		object->idx = atoi(sql_row[0]);
+		strcpy(object->name, sql_row[1]);
+		strcpy(object->type, sql_row[2]);
+		object->xpos = atoi(sql_row[3]);
+		object->ypos = atoi(sql_row[4]);
+		object->order = atoi(sql_row[5]);
+		strcpy(object->fileDir, sql_row[6]);
+		object->count = atoi(sql_row[7]);
+
+		insertStructCustomObjectList(objectList, object);
+	}
+	mysql_free_result(sql_result);
+
+	return objectList;
 }
 
 int updateInventoryItem(int sock, StructCustomObject structCustomObject)
@@ -506,9 +515,10 @@ int deleteSql_inventoryItem(StructCustomObject structCustomObject)
 	return 1;
 }
 
-MYSQL_RES * selectSql_userField_info(int sock)
+char * selectSql_userField_info(int sock)
 {
 	char query[QUERY_BUF_SIZE];
+	char * result;
 
 	sprintf(query, "SELECT FIELD FROM USER_LIST WHERE SOCK = '%d'", sock);
 
@@ -517,9 +527,16 @@ MYSQL_RES * selectSql_userField_info(int sock)
 	{
 		fprintf(stderr, "Mysql select query error : %s\n", mysql_error(&conn));
 		fprintf(stderr, "Sql : %s\n", query);
+		return NULL;
 	}
 
 	sql_result = mysql_store_result(connection);
+	sql_row = mysql_fetch_row(sql_result);
 
-	return sql_result;
+	result = (char*)malloc(strlen(sql_row[0]) + 1);
+	strcpy(result, sql_row[0]);
+
+	mysql_free_result(sql_result);
+
+	return result;
 }

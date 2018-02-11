@@ -40,13 +40,13 @@ int sendCommand(int sock, int code, char * message, int size);
 int readCommand(int sock, int * code, char * buf);
 
 //같은맵, 다른 유저와의 상호작용 알고리즘. 특정 유저의 행동을 같은필드, 다른 사람들에게 알림
-int userInteraction(int sock, int code, char * message, int size);
+void userInteraction(int sock, int code, char * message, int size);
 
 int SeparateString(char * str, char(*arr)[BUF_SIZE], int arrLen, char flag);
 void IntToChar(int value, char * result);
 void CharToInt(char * value, int * result);
 
-void sendFileData(int sock, int code, char * filename);
+int sendFileData(int sock, int code, char * filename);
 
 int main(int argc, char * argv[])
 {
@@ -118,7 +118,7 @@ int main(int argc, char * argv[])
 		{
 			//1초마다 DB시간 업데이트
 			if (updateDate(1) == -1)
-				error_handling("error Database Date!!");
+				error_handling("updateDate error");
 		}
 
 		if(dateCount / 1000 == 0)
@@ -133,18 +133,16 @@ int main(int argc, char * argv[])
 
 				if (login == 0)
 				{
+					//종료하는 유저 아이디 불러옴.
+					StructCustomUser * exitUser = selectSql_UserInfo(sock);
+					exitUser->action = ACTION_MAP_OUT;
+
 					close(sock);
 					printf("closed client : %d\n", sock);
 
 					//로그아웃한 시간을 DB에 반영
 					if (updateLogoutDateTime(sock) == -1)
-					{
-						return -1;
-					}
-
-					//종료하는 유저 아이디 불러옴.
-					StructCustomUser * exitUser = selectSql_UserInfo(sock);
-					exitUser->action = ACTION_MAP_OUT;
+						error_handling("updateLogoutDateTime error");
 
 					//종료시 해당 맵의 다른 유저들에게 자기정보를 보내준다.
 					memcpy(sendBuf, exitUser, sizeof(StructCustomUser));
@@ -153,7 +151,8 @@ int main(int argc, char * argv[])
 					if(exitUser != NULL)
 						free(exitUser);
 
-					updateSql_UserLogout(sock);
+					if(updateSql_UserLogout(sock) == -1)
+						error_handling("updateSql_UserLogout error");
 				}
 			}
 			mysql_free_result(sql_result);
@@ -209,73 +208,134 @@ int main(int argc, char * argv[])
 					switch(code)
 					{
 					case REQUEST_USER_INFO:			//유저 정보 요청시
-						printf("code : %d, content : %s\n", code, readBuf);
+						{
+							StructCustomUser * user = selectSql_UserInfo(ep_events[i].data.fd);
 
-						StructCustomUser * user = selectSql_UserInfo(ep_events[i].data.fd);
-						memcpy(sendBuf, user, sizeof(StructCustomUser));
-						str_len = sendCommand(ep_events[i].data.fd, code, sendBuf, sizeof(StructCustomUser));
+							if (user != NULL)
+							{
+								memcpy(sendBuf, user, sizeof(StructCustomUser));
 
-						if(user != NULL)
-							free(user);
+								if (sendCommand(ep_events[i].data.fd, code, sendBuf, sizeof(StructCustomUser)) <= 0)
+								{
+									close(ep_events[i].data.fd);
+									printf("closed client : %d\n", ep_events[i].data.fd);
+
+									if (updateSql_UserLogout(ep_events[i].data.fd) == -1)
+										error_handling("REQUEST_USER_INFO error");
+								}
+
+								free(user);
+							}
+							else
+								error_handling("REQUEST_USER_INFO error!!");
+						}
 						break;
 					case CHATTING_PROCESS:			//채팅시
-						printf("code : %d, content : %s\n", code, readBuf);
+						{
+							StructCustomChatting chattingInfo;
+							memcpy(&chattingInfo, readBuf, sizeof(StructCustomChatting));
 
-						char chattingInfo[3][BUF_SIZE];
-						len = SeparateString(readBuf, chattingInfo, sizeof(chattingInfo) / BUF_SIZE, '\n');
+							//데이터베이스에 저장한다.
+							if (insertSql_chatting(chattingInfo.field, chattingInfo.name, chattingInfo.content) == -1)
+								error_handling("CHATTING_PROCESS error!!");
 
-						strcpy(name, chattingInfo[0]);
-						strcpy(content, chattingInfo[1]);
-						strcpy(field, chattingInfo[2]);
-
-						//데이터베이스에 저장한다.
-						insertSql_chatting(field, name, content);
-
-						//같은 필드의 다른 유저들에게 채팅메시지를 전송한다.
-						userInteraction(ep_events[i].data.fd, code, readBuf, strlen(readBuf));
+							//같은 필드의 다른 유저들에게 채팅메시지를 전송한다.
+							userInteraction(ep_events[i].data.fd, code, readBuf, sizeof(StructCustomChatting));
+						}
 						break;
 					case REQUEST_LOGIN:				//로그인 승인시
-						printf("code : %d, content : %s\n", code, readBuf);
-						int count = selectSql_isUser(readBuf);
-
-						if (count > 0)
 						{
-							str_len = sendCommand(ep_events[i].data.fd, code, "login okey", strlen("login okey"));
+							int count = selectSql_isUser(readBuf);
 
-							//로그인상태를 바꾼다.
-							updateSql_UserLogin(ep_events[i].data.fd, readBuf);
-
-							//해당 유저의 정보를 가져온다.
-							StructCustomUser * structCustomUser = selectSql_UserInfo(ep_events[i].data.fd);
-
-							printf("NEW User IN!! (name : %s xpos : %d, ypos : %d)\n", structCustomUser->name, structCustomUser->xpos, structCustomUser->ypos);
-
-							//접속시 해당 맵의 다른 유저들에게 자기정보를 보내준다.
-							structCustomUser->action = ACTION_MAP_IN;
-							memcpy(sendBuf, structCustomUser, sizeof(StructCustomUser));
-							StructCustomUserList * userList = selectSql_fieldUsers(ep_events[i].data.fd);
-							StructCustomUser * fieldUser;
-
-							char imsiSendBuf[BUF_SIZE];
-
-							while ((fieldUser = getStructCustomUserList(userList)) != NULL)
+							if (count > 0)
 							{
-								str_len = sendCommand(fieldUser->sock, OTHER_USER_MAP_MOVE, sendBuf, sizeof(StructCustomUser));
+								StructCustomUser * fieldUser;
+								StructCustomUserList * userList;
+								StructCustomUser * structCustomUser;
+								char imsiSendBuf[BUF_SIZE];
 
-								//같은맵의 다른 유저 정보를 전해준다.
-								fieldUser->action = ACTION_MAP_IN;
+								if (sendCommand(ep_events[i].data.fd, code, "login okey", strlen("login okey")) <= 0)
+								{
+									close(ep_events[i].data.fd);
+									printf("closed client : %d\n", ep_events[i].data.fd);
 
-								memcpy(imsiSendBuf, fieldUser, sizeof(StructCustomUser));
-								sendCommand(ep_events[i].data.fd, OTHER_USER_MAP_MOVE, imsiSendBuf, sizeof(StructCustomUser));
-								free(fieldUser);
+									if (updateSql_UserLogout(ep_events[i].data.fd) == -1)
+										error_handling("REQUEST_LOGIN error");
+									continue;
+								}
+
+								//로그인상태를 바꾼다.
+								if (updateSql_UserLogin(ep_events[i].data.fd, readBuf) == -1)
+									error_handling("REQUEST_LOGIN error");
+
+								userList = selectSql_fieldUsers(ep_events[i].data.fd);
+
+								if (userList == NULL)
+									error_handling("REQUEST_LOGIN error");
+
+								structCustomUser = selectSql_UserInfo(ep_events[i].data.fd);
+
+								if(structCustomUser == NULL)
+									error_handling("REQUEST_LOGIN error");
+
+								structCustomUser->action = ACTION_MAP_IN;
+
+								//접속시 해당 맵의 다른 유저들에게 자기정보를 보내준다.
+								memcpy(sendBuf, structCustomUser, sizeof(StructCustomUser));
+
+								while ((fieldUser = getStructCustomUserList(userList)) != NULL)
+								{
+									if(sendCommand(fieldUser->sock, OTHER_USER_MAP_MOVE, sendBuf, sizeof(StructCustomUser)) <= 0)
+									{
+										close(fieldUser->sock);
+										printf("closed client : %d\n", fieldUser->sock);
+
+										if (updateSql_UserLogout(fieldUser->sock) == -1)
+											error_handling("REQUEST_LOGIN error");
+
+										if(fieldUser != NULL)
+											free(fieldUser);
+										continue;
+									}
+
+									//같은맵의 다른 유저 정보를 전해준다.
+									fieldUser->action = ACTION_MAP_IN;
+
+									memcpy(imsiSendBuf, fieldUser, sizeof(StructCustomUser));
+
+									if (sendCommand(ep_events[i].data.fd, OTHER_USER_MAP_MOVE, imsiSendBuf, sizeof(StructCustomUser)) <= 0)
+									{
+										close(ep_events[i].data.fd);
+										printf("closed client : %d\n", ep_events[i].data.fd);
+
+										if (updateSql_UserLogout(ep_events[i].data.fd) == -1)
+											error_handling("REQUEST_LOGIN error");
+
+										if (fieldUser != NULL)
+											free(fieldUser);
+										continue;
+									}
+
+									if (fieldUser != NULL)
+										free(fieldUser);
+								}
+
+								if (userList != NULL)
+									free(userList);
+								if (structCustomUser != NULL)
+									free(structCustomUser);
 							}
-							free(userList);
-							if (structCustomUser != NULL)
-								free(structCustomUser);
-						}
-						else
-							str_len = sendCommand(ep_events[i].data.fd, code, "login fail", strlen("login fail"));
+							else
+								if (sendCommand(ep_events[i].data.fd, code, "login fail", strlen("login fail")) <= 0)
+								{
+									close(ep_events[i].data.fd);
+									printf("closed client : %d\n", ep_events[i].data.fd);
 
+									if (updateSql_UserLogout(ep_events[i].data.fd) == -1)
+										error_handling("REQUEST_LOGIN error");
+									continue;
+								}
+						}
 						break;
 					case USER_MOVE_UPDATE:
 						{
@@ -287,37 +347,70 @@ int main(int argc, char * argv[])
 							//접속시 해당 맵의 다른 유저들에게 자기정보를 보내준다.
 							if (currentUser.action == ACTION_MAP_POTAL)
 							{
+								StructCustomUserList * userList;
+								StructCustomUser * fieldUser;
+								char imsiSendBuf[BUF_SIZE];
+
 								//맵에서 나갈때 나가기전에 다른 유저들한테 보냄.
 								currentUser.action = ACTION_MAP_OUT;
 								memcpy(sendBuf, &currentUser, sizeof(StructCustomUser));
 								userInteraction(ep_events[i].data.fd, OTHER_USER_MAP_MOVE, sendBuf, sizeof(StructCustomUser));
-								updateUserMove(currentUser);
+
+								if(updateUserMove(currentUser) == -1)
+									error_handling("USER_MOVE_UPDATE error");
 
 								//맵에서 나가고 나서 다른 맵에 진입할때 다른 유저들한테 보냄.
 								currentUser.action = ACTION_MAP_IN;
 								memcpy(sendBuf, &currentUser, sizeof(StructCustomUser));
-								StructCustomUserList * userList = selectSql_fieldUsers(ep_events[i].data.fd);
-								StructCustomUser * fieldUser;
+								userList = selectSql_fieldUsers(ep_events[i].data.fd);
 
-								char imsiSendBuf[BUF_SIZE];
+								if(userList == NULL)
+									error_handling("USER_MOVE_UPDATE error");
 
 								while ((fieldUser = getStructCustomUserList(userList)) != NULL)
 								{
-									str_len = sendCommand(fieldUser->sock, OTHER_USER_MAP_MOVE, sendBuf, sizeof(StructCustomUser));
-									printf("userName : %s, xpos : %d, ypos : %d, field : %s\n", currentUser.name, currentUser.xpos, currentUser.ypos, currentUser.field);
+									if (sendCommand(fieldUser->sock, OTHER_USER_MAP_MOVE, sendBuf, sizeof(StructCustomUser)) <= 0)
+									{
+										close(fieldUser->sock);
+										printf("closed client : %d\n", fieldUser->sock);
+
+										if (updateSql_UserLogout(fieldUser->sock) == -1)
+											error_handling("USER_MOVE_UPDATE error");
+										if (fieldUser != NULL)
+											free(fieldUser);
+										continue;
+									}
 
 									//이동한 맵의 유저들 정보를 알려준다.
 									fieldUser->action = ACTION_MAP_IN;
 									memcpy(imsiSendBuf, fieldUser, sizeof(StructCustomUser));
-									sendCommand(ep_events[i].data.fd, OTHER_USER_MAP_MOVE, imsiSendBuf, sizeof(StructCustomUser));
-									free(fieldUser);
+
+									if (sendCommand(ep_events[i].data.fd, OTHER_USER_MAP_MOVE, imsiSendBuf, sizeof(StructCustomUser)) <= 0)
+									{
+										close(ep_events[i].data.fd);
+										printf("closed client : %d\n", ep_events[i].data.fd);
+
+										if (updateSql_UserLogout(ep_events[i].data.fd) == -1)
+											error_handling("USER_MOVE_UPDATE error");
+
+										if (fieldUser != NULL)
+											free(fieldUser);
+										continue;
+									}
+
+									if (fieldUser != NULL)
+										free(fieldUser);
 								}
-								free(userList);
+
+								if(userList != NULL)
+									free(userList);
 							}
 							else
 							{
 								//현재 맵에서 이동할때.
-								updateUserMove(currentUser);
+								if(updateUserMove(currentUser) <= 0)
+									error_handling("USER_MOVE_UPDATE error");
+
 								currentUser.action = ACTION_MAP_MOVE;
 								memcpy(sendBuf, &currentUser, sizeof(StructCustomUser));
 
@@ -329,152 +422,164 @@ int main(int argc, char * argv[])
 					case OTHER_USER_MAP_MOVE:
 						break;
 					case REQUEST_JOIN:			//유저 회원가입시
-						printf("code : %d, content : %s\n", code, readBuf);
-						int result = insertUserInfo(readBuf);
+						{
+							int result = insertUserInfo(readBuf);
 
-						if (result == -1)
-						{
-							printf("중복된 아이디입니다.\n");
-							sendCommand(ep_events[i].data.fd, code, "join disapprove", strlen("join disapprove"));
-						}
-						else
-						{
-							printf("생성되었습니다.\n");
-							sendCommand(ep_events[i].data.fd, code, "join okey", strlen("join okey"));
+							if (result == -1)
+								sendCommand(ep_events[i].data.fd, code, "join disapprove", strlen("join disapprove"));
+							else
+								sendCommand(ep_events[i].data.fd, code, "join okey", strlen("join okey"));
 						}
 						break;
 					case UPDATE_LOGIN_TIME:
 						{
-							printf("code : %d, content : %s\n", code, readBuf);
-							//로그인상태를 바꾼다.
-							updateSql_UserLogin(ep_events[i].data.fd, readBuf);
+							//로그인 시간을 업데이트한다.
+							if (updateSql_UserLogin(ep_events[i].data.fd, readBuf) == -1)
+								error_handling("UPDATE_LOGIN_TIME error");
 						}
 						break;
 					//우저가 타일맵 자료 요청시
 					case REQUEST_TILED_MAP:
-						printf("code : %d, content : %s\n", code, readBuf);
-						sendFileData(ep_events[i].data.fd, code, readBuf);
+						{
+							if(sendFileData(ep_events[i].data.fd, code, readBuf) == -1)
+								error_handling("REQUEST_TILED_MAP error");
+						}
 						break;
 					//유저가 이미지 자료 요청시
 					case REQUEST_IMAGE:
-						printf("code : %d, content : %s\n", code, readBuf);
-						sendFileData(ep_events[i].data.fd, code, readBuf);
+						{
+							if (sendFileData(ep_events[i].data.fd, code, readBuf) == -1)
+								error_handling("REQUEST_IMAGE error");
+						}
 						break;
 					//유저가 땅에 떨어진 아이템을 먹을시
 					case DELETE_FIELD_ITEM:
-						printf("code : %d, content : %s\n", code, readBuf);
-						StructCustomObject * imsiItemInfo = (StructCustomObject*)malloc(sizeof(StructCustomObject));
-						memcpy(imsiItemInfo, readBuf, sizeof(StructCustomObject));
+						{
+							StructCustomObject imsiItemInfo;
+							memcpy(&imsiItemInfo, readBuf, sizeof(StructCustomObject));
 
-						//맵의 아이템을 지운다.
-						deleteMapObject(imsiItemInfo->idx);
+							//맵의 아이템을 지운다.
+							if(deleteMapObject(imsiItemInfo.idx) == -1)
+								error_handling("DELETE_FIELD_ITEM error");
 
-						//맵의 아이템을 인벤토리에 추가한다.
-						insertInventoryItem(ep_events[i].data.fd, *imsiItemInfo);
+							//맵의 아이템을 인벤토리에 추가한다.
+							if(insertInventoryItem(ep_events[i].data.fd, imsiItemInfo) == -1)
+								error_handling("DELETE_FIELD_ITEM error");
 
-						free(imsiItemInfo);
-
-						//다른 유저에게 알림
-						userInteraction(ep_events[i].data.fd, code, readBuf, sizeof(StructCustomObject));
+							//다른 유저에게 알림
+							userInteraction(ep_events[i].data.fd, code, readBuf, sizeof(StructCustomObject));
+						}
 						break;
 					//맵정보를 불러올때
 					case REQUEST_FIELD_INFO:
-						printf("code : %d, content : %s\n", code, readBuf);
-						StructCustomObject objectInfo[100];
-						int objectCount = 0;
-						char * imsiSendBuf;
-
-						//맵의 정보를 출력
-						sql_result = selectSql_field_info(readBuf);
-
-						while ((sql_row = mysql_fetch_row(sql_result)) != NULL)
 						{
-							objectInfo[objectCount].idx = atoi(sql_row[0]);
-							strcpy(objectInfo[objectCount].name, sql_row[1]);
-							strcpy(objectInfo[objectCount].type, sql_row[2]);
-							objectInfo[objectCount].xpos = atoi(sql_row[3]);
-							objectInfo[objectCount].ypos = atoi(sql_row[4]);
-							objectInfo[objectCount].order = atoi(sql_row[5]);
-							strcpy(objectInfo[objectCount].fileDir, sql_row[6]);
-							objectInfo[objectCount].count = atoi(sql_row[7]);
-							objectCount++;
+							StructCustomObjectList * objectInfo = NULL;
+							StructCustomObject * object = NULL;
+							int objectCount;
+							int bufferPlag;
+							char * imsiSendBuf;
+
+							//맵의 정보를 출력
+							objectInfo = selectSql_field_info(readBuf);
+							objectCount = getObjectCount(objectInfo);
+
+							imsiSendBuf = (char*)malloc(sizeof(int) + sizeof(StructCustomObject) * objectCount);
+							memcpy(&imsiSendBuf[0], &objectCount, sizeof(int));
+							bufferPlag = 4;
+
+							while ((object = getStructCustomObjectList(objectInfo)) != NULL)
+							{
+								memcpy(&imsiSendBuf[bufferPlag], object, sizeof(StructCustomObject));
+								bufferPlag += sizeof(StructCustomObject);
+
+								if (object != NULL)
+									free(object);
+							}
+
+							if (sendCommand(ep_events[i].data.fd, code, imsiSendBuf, sizeof(int) + sizeof(StructCustomObject) * objectCount) <= 0)
+							{
+								close(ep_events[i].data.fd);
+								printf("closed client : %d\n", ep_events[i].data.fd);
+
+								if (updateSql_UserLogout(ep_events[i].data.fd) == -1)
+									error_handling("REQUEST_FIELD_INFO error");
+							}
+
+							free(imsiSendBuf);
+							if (objectInfo != NULL)
+								free(objectInfo);
 						}
-						mysql_free_result(sql_result);
-
-						imsiSendBuf = (char*)malloc(sizeof(int) + sizeof(StructCustomObject) * objectCount);
-						memcpy(&imsiSendBuf[0], &objectCount, sizeof(int));
-						memcpy(&imsiSendBuf[4], objectInfo, sizeof(StructCustomObject) * objectCount);
-
-						str_len = sendCommand(ep_events[i].data.fd, code, imsiSendBuf, sizeof(int) + sizeof(StructCustomObject) * objectCount);
-						if (str_len <= 0)
-							printf("Request Field Info Send Error!!\n");
-
-						free(imsiSendBuf);
 						break;
 					case REQUEST_INVENTORY_ITEM_INFO:
-						printf("code : %d, content : %s\n", code, readBuf);
-						StructCustomObject itemInfo[100];
-						int itemCount = 0;
-						char * imsiSendBuf2;
-
-						//인벤토리의 정보를 출력
-						sql_result = selectSql_inventory_info(readBuf);
-
-						while ((sql_row = mysql_fetch_row(sql_result)) != NULL)
 						{
-							itemInfo[itemCount].idx = atoi(sql_row[0]);
-							strcpy(itemInfo[itemCount].name, sql_row[1]);
-							strcpy(itemInfo[itemCount].type, sql_row[2]);
-							itemInfo[itemCount].xpos = atoi(sql_row[3]);
-							itemInfo[itemCount].ypos = atoi(sql_row[4]);
-							itemInfo[itemCount].order = atoi(sql_row[5]);
-							strcpy(itemInfo[itemCount].fileDir, sql_row[6]);
-							itemInfo[itemCount].count = atoi(sql_row[7]);
+							StructCustomObjectList * objectInfo = NULL;
+							StructCustomObject * object = NULL;
+							int objectCount;
+							int bufferPlag;
+							char * imsiSendBuf;
 
-							printf("name : %s, type : %s, pos(%d, %d)\n", itemInfo[itemCount].name, itemInfo[itemCount].type, itemInfo[itemCount].xpos, itemInfo[itemCount].ypos);
-							itemCount++;
+							//아이템창의 정보를 출력
+							objectInfo = selectSql_inventory_info(readBuf);
+							objectCount = getObjectCount(objectInfo);
+
+							imsiSendBuf = (char*)malloc(sizeof(int) + sizeof(StructCustomObject) * objectCount);
+							memcpy(&imsiSendBuf[0], &objectCount, sizeof(int));
+							bufferPlag = 4;
+
+							while ((object = getStructCustomObjectList(objectInfo)) != NULL)
+							{
+								memcpy(&imsiSendBuf[bufferPlag], object, sizeof(StructCustomObject));
+								bufferPlag += sizeof(StructCustomObject);
+
+								if (object != NULL)
+									free(object);
+							}
+
+							if (sendCommand(ep_events[i].data.fd, code, imsiSendBuf, sizeof(int) + sizeof(StructCustomObject) * objectCount) <= 0)
+							{
+								close(ep_events[i].data.fd);
+								printf("closed client : %d\n", ep_events[i].data.fd);
+
+								if (updateSql_UserLogout(ep_events[i].data.fd) == -1)
+									error_handling("REQUEST_INVENTORY_ITEM_INFO error");
+							}
+
+							free(imsiSendBuf);
+							if (objectInfo != NULL)
+								free(objectInfo);
 						}
-						mysql_free_result(sql_result);
-
-						imsiSendBuf2 = (char*)malloc(sizeof(int) + sizeof(StructCustomObject) * itemCount);
-						memcpy(&imsiSendBuf2[0], &itemCount, sizeof(int));
-						memcpy(&imsiSendBuf2[4], itemInfo, sizeof(StructCustomObject) * itemCount);
-
-						str_len = sendCommand(ep_events[i].data.fd, code, imsiSendBuf2, sizeof(int) + sizeof(StructCustomObject) * itemCount);
-						if (str_len <= 0)
-							printf("Request Inventory Info Send Error!!\n");
-
-						free(imsiSendBuf2);
 						break;
 					case MOVE_INVENTORY_ITEM:
-						printf("code : %d, content : %s\n", code, readBuf);
-						StructCustomObject * imsiItemInfo2 = (StructCustomObject*)malloc(sizeof(StructCustomObject));
-						memcpy(imsiItemInfo2, readBuf, sizeof(StructCustomObject));
+						{
+							StructCustomObject imsiItemInfo;
+							memcpy(&imsiItemInfo, readBuf, sizeof(StructCustomObject));
 
-						//인벤토리의 아이템 정보를 수정한다.
-						updateInventoryItem(ep_events[i].data.fd, *imsiItemInfo2);
-
-						free(imsiItemInfo2);
+							//인벤토리의 아이템 정보를 수정한다.
+							if (updateInventoryItem(ep_events[i].data.fd, imsiItemInfo) == -1)
+								error_handling("MOVE_INVENTORY_ITEM error");
+						}
 						break;
 					case THROW_ITEM:
-						printf("code : %d, content : %s\n", code, readBuf);
-						StructCustomObject * imsiItemInfo3 = (StructCustomObject*)malloc(sizeof(StructCustomObject));
-						memcpy(imsiItemInfo3, readBuf, sizeof(StructCustomObject));
+						{
+							char * field;
+							StructCustomObject imsiItemInfo;
+							memcpy(&imsiItemInfo, readBuf, sizeof(StructCustomObject));
 
-						//유저가 위치한 필드명을 불러온다.
-						sql_result = selectSql_userField_info(ep_events[i].data.fd);
-						sql_row = mysql_fetch_row(sql_result);
+							//유저가 위치한 필드명을 불러온다.
+							field = selectSql_userField_info(ep_events[i].data.fd);
 
-						//맵에 아이템을 추가한다.
-						insertSql_mapObject(sql_row[0], *imsiItemInfo3);
+							//맵에 아이템을 추가한다.
+							insertSql_mapObject(field, imsiItemInfo);
 
-						//인벤토리창의 아이템을 지운다.
-						deleteSql_inventoryItem(*imsiItemInfo3);
+							//인벤토리창의 아이템을 지운다.
+							deleteSql_inventoryItem(imsiItemInfo);
 
-						//다른 유저에게 알림
-						userInteraction(ep_events[i].data.fd, code, readBuf, sizeof(StructCustomObject));
+							//다른 유저에게 알림
+							userInteraction(ep_events[i].data.fd, code, readBuf, sizeof(StructCustomObject));
 
-						free(imsiItemInfo3);
+							if(field != NULL)
+								free(field);
+						}
 						break;
 					default:
 						printf("code : %d, content : %s\n", code, readBuf);
@@ -554,72 +659,35 @@ int readCommand(int sock, int * code, char * buf)
 }
 
 //같은맵, 다른 유저와의 상호작용 알고리즘. 특정 유저의 행동을 같은필드, 다른 사람들에게 알림
-int userInteraction(int sock, int code, char * message, int size)
+void userInteraction(int sock, int code, char * message, int size)
 {
-	MYSQL_RES   	*sql_result;
-	MYSQL_ROW   	sql_row;
-	int str_len;
 	int result = 1;
-	char errorMessage[50];
+	StructCustomUserList * userList;
+	StructCustomUser * fieldUser;
 
 	//현재 맵에 있는 유저 목록 출력
-	StructCustomUserList * userList = selectSql_fieldUsers(sock);
-	StructCustomUser * fieldUser;
+	userList = selectSql_fieldUsers(sock);
+
+	if (userList == NULL)
+		error_handling("userInteraction error");
 
 	while ((fieldUser = getStructCustomUserList(userList)) != NULL)
 	{
 		//현재 맵의 다른 유저들에게 알림
-		str_len = sendCommand(fieldUser->sock, code, message, size);
-
-		if (str_len <= 0)
+		if (sendCommand(fieldUser->sock, code, message, size) <= 0)
 		{
-			printf("Other User Send Error!! : user(%d), Code(%d), Message(%s)\n", fieldUser->sock, code, message);
-			result = -1;
+			close(fieldUser->sock);
+			printf("closed client : %d\n", fieldUser->sock);
+			printf("Other User Send Error!! : user(%d)\n", fieldUser->sock);
+
+			if (updateSql_UserLogout(fieldUser->sock) == -1)
+				error_handling("REQUEST_INVENTORY_ITEM_INFO error");
 		}
 
 		free(fieldUser);
 	}
-	free(userList);
-
-	return result;
-}
-
-int SeparateString(char * str, char(*arr)[BUF_SIZE], int arrLen, char flag)
-{
-	char imsi[BUF_SIZE];
-	char strarr[BUF_SIZE];
-	int count = 0;
-	int j = 0;
-
-	strcpy(imsi, str);
-
-	for (int i = 0; i < strlen(imsi) + 1; i++)
-	{
-		if (imsi[i] == flag)
-		{
-			strarr[j] = 0;
-			if (count >= arrLen)
-				break;
-			else
-				strcpy(arr[count++], strarr);
-			j = 0;
-			continue;
-		}
-		else if (i == strlen(imsi))
-		{
-			strarr[j] = 0;
-			if (count >= arrLen)
-				break;
-			else
-				strcpy(arr[count++], strarr);
-			break;
-		}
-
-		strarr[j] = imsi[i];
-		j++;
-	}
-
-	return count;
+	if(userList != NULL)
+		free(userList);
 }
 
 void IntToChar(int value, char * result)
@@ -638,7 +706,7 @@ void CharToInt(char * value, int * result)
 	*result += (unsigned char)value[3];
 }
 
-void sendFileData(int sock, int code, char * filename)
+int sendFileData(int sock, int code, char * filename)
 {
 	int fp;
 	int size;
@@ -651,7 +719,7 @@ void sendFileData(int sock, int code, char * filename)
 	if ((fp = open(cwd, O_RDONLY)) == -1)
 	{
 		fprintf(stderr, "File Open error : %s\n", cwd);
-		return;
+		return -1;
 	}
 
 	lseek(fp, 0, SEEK_END);							// 파일 포인터를 파일의 끝으로 이동시킴
@@ -663,14 +731,21 @@ void sendFileData(int sock, int code, char * filename)
 	if (read(fp, fileBuf, size) <= 0)
 	{
 		fprintf(stderr, "File Read error : %s\n", filename);
-		return;
+		return -1;
 	}
 
-	if (sendCommand(sock, code, fileBuf, size) != -1)
-		printf("File Send Success! : %s, Size : %d\n", filename, size);
-	else
+	if (sendCommand(sock, code, fileBuf, size) <= 0)
+	{
 		printf("File Send Fail! : %s\n", filename);
+		close(sock);
+		printf("closed client : %d\n", sock);
+
+		free(fileBuf);
+		close(fp);
+		return -1;
+	}
 
 	free(fileBuf);
 	close(fp);
+	return 1;
 }
