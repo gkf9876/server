@@ -403,7 +403,6 @@ int main(int argc, char * argv[])
 								if(updateUserMove(currentUser) <= 0)
 									error_handling("USER_MOVE_UPDATE error");
 
-								currentUser.action = ACTION_MAP_MOVE;
 								memcpy(sendBuf, &currentUser, sizeof(StructCustomUser));
 
 								//다른 유저에게 알림

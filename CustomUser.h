@@ -8,6 +8,7 @@
 #define ACTION_MAP_MOVE		1
 #define ACTION_MAP_OUT		2
 #define ACTION_MAP_POTAL	3
+#define ACTION_MAP_MOVE_END	4
 
 typedef struct
 {
