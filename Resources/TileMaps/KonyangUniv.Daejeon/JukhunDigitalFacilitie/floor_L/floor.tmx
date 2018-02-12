@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.0" orientation="orthogonal" renderorder="right-down" width="42" height="16" tilewidth="32" tileheight="32" nextobjectid="79">
+<map version="1.0" tiledversion="1.1.1" orientation="orthogonal" renderorder="right-down" width="42" height="16" tilewidth="32" tileheight="32" infinite="0" nextobjectid="79">
  <tileset firstgid="1" name="Meta" tilewidth="32" tileheight="32" spacing="1" margin="1" tilecount="60" columns="12">
   <image source="metaset.png" width="397" height="166"/>
   <tile id="0">
@@ -313,6 +313,9 @@
   <image source="RPGmaker tile.png" width="1024" height="2016"/>
  </tileset>
  <layer name="Background" width="42" height="16">
+  <properties>
+   <property name="Address" value="TileMaps/KonyangUniv.Daejeon/JukhunDigitalFacilitie/floor_L/"/>
+  </properties>
   <data encoding="base64" compression="zlib">
    eJxjYKAuWATE9UgYG59cc2H4EBSTy4dhQu4kFzcNcjzqzpHtThg+xEBevsFlLrp6StxJCcBn9yIi1Q0Gd9oOEXcSo24wuBNfGh4s7kS3Z9Sdo+4cCHfSCwMAcFYPDQ==
   </data>
