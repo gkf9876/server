@@ -1,4 +1,4 @@
-﻿#include "ChattingDB.h"
+#include "ChattingDB.h"
 
 MYSQL       	*connection=NULL, conn;
 MYSQL_RES   	*sql_result;
@@ -76,13 +76,18 @@ StructCustomUser * selectSql_UserInfo(int sock)
 	sql_result = mysql_store_result(connection);
 	sql_row = mysql_fetch_row(sql_result);
 
-	StructCustomUser * user = (StructCustomUser*)malloc(sizeof(StructCustomUser));
-	user->sock = sock;
-	strcpy(user->name, sql_row[0]);
-	user->xpos = atoi(sql_row[1]);
-	user->ypos = atoi(sql_row[2]);
-	strcpy(user->field, sql_row[3]);
-	user->seeDirection = atoi(sql_row[4]);
+    StructCustomUser * user = NULL;
+    
+    if(sql_row != NULL)
+    {
+        user = (StructCustomUser*)malloc(sizeof(StructCustomUser));
+        user->sock = sock;
+        strcpy(user->name, sql_row[0]);
+        user->xpos = atoi(sql_row[1]);
+        user->ypos = atoi(sql_row[2]);
+        strcpy(user->field, sql_row[3]);
+        user->seeDirection = atoi(sql_row[4]);
+    }
 
 	mysql_free_result(sql_result);
 
@@ -533,8 +538,13 @@ char * selectSql_userField_info(int sock)
 	sql_result = mysql_store_result(connection);
 	sql_row = mysql_fetch_row(sql_result);
 
-	result = (char*)malloc(strlen(sql_row[0]) + 1);
-	strcpy(result, sql_row[0]);
+    if(sql_row != NULL)
+    {
+        result = (char*)malloc(strlen(sql_row[0]) + 1);
+        strcpy(result, sql_row[0]);
+    }
+    else
+        result = NULL;
 
 	mysql_free_result(sql_result);
 

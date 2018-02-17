@@ -1,4 +1,4 @@
-﻿#include <stdio.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
@@ -32,8 +32,8 @@
 #define MOVE_INVENTORY_ITEM				13
 #define THROW_ITEM						14
 
-#define CUR_PATH						"/home/gkf9876/server/Resources/"
-//#define CUR_PATH						"/home/pi/server/Resources/"
+//#define CUR_PATH						"/home/gkf9876/server/Resources/"
+#define CUR_PATH						"/home/pi/server/Resources/"
 
 void error_handling(char * message);
 int sendCommand(int sock, int code, char * message, int size);
@@ -47,6 +47,8 @@ void IntToChar(int value, char * result);
 void CharToInt(char * value, int * result);
 
 int sendFileData(int sock, int code, char * filename);
+
+int logout_exitUser(int sock);
 
 int main(int argc, char * argv[])
 {
@@ -114,7 +116,7 @@ int main(int argc, char * argv[])
 			if (updateDate(1) == -1)
 				error_handling("updateDate error");
 		}
-
+        
 		if(dateCount / 1000 == 0)
 		{
 			//10초마다 접속한 유저 확인
@@ -124,36 +126,18 @@ int main(int argc, char * argv[])
 			{
 				int sock = atoi(sql_row[0]);
 				int login = atoi(sql_row[1]);
-
+                
 				if (login == 0)
 				{
-					//종료하는 유저 아이디 불러옴.
-					StructCustomUser * exitUser = selectSql_UserInfo(sock);
-					exitUser->action = ACTION_MAP_OUT;
-
-					close(sock);
-					printf("closed client : %d\n", sock);
-
-					//로그아웃한 시간을 DB에 반영
-					if (updateLogoutDateTime(sock) == -1)
-						error_handling("updateLogoutDateTime error");
-
-					//종료시 해당 맵의 다른 유저들에게 자기정보를 보내준다.
-					memcpy(sendBuf, exitUser, sizeof(StructCustomUser));
-					userInteraction(sock, OTHER_USER_MAP_MOVE, sendBuf, sizeof(StructCustomUser));
-
-					if(exitUser != NULL)
-						free(exitUser);
-
-					if(updateSql_UserLogout(sock) == -1)
-						error_handling("updateSql_UserLogout error");
+                    if(logout_exitUser(sock) == -1)
+                        error_handling("10update error");
 				}
 			}
 			mysql_free_result(sql_result);
 
 			dateCount = 0;
 		}
-
+        
 		if(event_cnt == -1)
 		{
 			puts("epoll_wait() error");
@@ -173,27 +157,10 @@ int main(int argc, char * argv[])
 			}
 			else
 			{
-				if(readCommand(ep_events[i].data.fd, &code, readBuf) == 0)
+				if(readCommand(ep_events[i].data.fd, &code, readBuf) <= 0)
 				{
-					epoll_ctl(epfd, EPOLL_CTL_DEL, ep_events[i].data.fd, NULL);
-					close(ep_events[i].data.fd);
-					printf("closed client : %d\n", ep_events[i].data.fd);
-
-					//로그아웃한 시간을 DB에 반영
-					if (updateLogoutDateTime(ep_events[i].data.fd) == -1)
-					{
-						return -1;
-					}
-
-					//종료하는 유저 아이디 불러옴.
-					StructCustomUser * exitUser = selectSql_UserInfo(ep_events[i].data.fd);
-					exitUser->action = ACTION_MAP_OUT;
-
-					//종료시 해당 맵의 다른 유저들에게 자기정보를 보내준다.
-					memcpy(sendBuf, exitUser, sizeof(StructCustomUser));
-					userInteraction(ep_events[i].data.fd, OTHER_USER_MAP_MOVE, sendBuf, sizeof(StructCustomUser));
-
-					updateSql_UserLogout(ep_events[i].data.fd);
+                    if(logout_exitUser(ep_events[i].data.fd) == -1)
+                        error_handling("readCommand error");
 				}
 				else
 				{
@@ -209,17 +176,14 @@ int main(int argc, char * argv[])
 
 								if (sendCommand(ep_events[i].data.fd, code, sendBuf, sizeof(StructCustomUser)) <= 0)
 								{
-									close(ep_events[i].data.fd);
-									printf("closed client : %d\n", ep_events[i].data.fd);
-
-									if (updateSql_UserLogout(ep_events[i].data.fd) == -1)
-										error_handling("REQUEST_USER_INFO error");
+                                    if(logout_exitUser(ep_events[i].data.fd) == -1)
+                                        error_handling("REQUEST_USER_INFO_1 error");
 								}
 
 								free(user);
 							}
 							else
-								error_handling("REQUEST_USER_INFO error!!");
+								error_handling("REQUEST_USER_INFO_2 error!!");
 						}
 						break;
 					case CHATTING_PROCESS:			//채팅시
@@ -229,7 +193,7 @@ int main(int argc, char * argv[])
 
 							//데이터베이스에 저장한다.
 							if (insertSql_chatting(chattingInfo.field, chattingInfo.name, chattingInfo.content) == -1)
-								error_handling("CHATTING_PROCESS error!!");
+								error_handling("CHATTING_PROCESS_1 error!!");
 
 							//같은 필드의 다른 유저들에게 채팅메시지를 전송한다.
 							userInteraction(ep_events[i].data.fd, code, readBuf, sizeof(StructCustomChatting));
@@ -248,27 +212,24 @@ int main(int argc, char * argv[])
 
 								if (sendCommand(ep_events[i].data.fd, code, "login okey", strlen("login okey")) <= 0)
 								{
-									close(ep_events[i].data.fd);
-									printf("closed client : %d\n", ep_events[i].data.fd);
-
-									if (updateSql_UserLogout(ep_events[i].data.fd) == -1)
-										error_handling("REQUEST_LOGIN error");
+                                    if(logout_exitUser(ep_events[i].data.fd) == -1)
+                                        error_handling("REQUEST_LOGIN_1 error");
 									continue;
 								}
 
 								//로그인상태를 바꾼다.
 								if (updateSql_UserLogin(ep_events[i].data.fd, readBuf) == -1)
-									error_handling("REQUEST_LOGIN error");
+									error_handling("REQUEST_LOGIN_2 error");
 
 								userList = selectSql_fieldUsers(ep_events[i].data.fd);
 
 								if (userList == NULL)
-									error_handling("REQUEST_LOGIN error");
+									error_handling("REQUEST_LOGIN_3 error");
 
 								structCustomUser = selectSql_UserInfo(ep_events[i].data.fd);
 
 								if(structCustomUser == NULL)
-									error_handling("REQUEST_LOGIN error");
+									error_handling("REQUEST_LOGIN_4 error");
 
 								structCustomUser->action = ACTION_MAP_IN;
 
@@ -279,14 +240,8 @@ int main(int argc, char * argv[])
 								{
 									if(sendCommand(fieldUser->sock, OTHER_USER_MAP_MOVE, sendBuf, sizeof(StructCustomUser)) <= 0)
 									{
-										close(fieldUser->sock);
-										printf("closed client : %d\n", fieldUser->sock);
-
-										if (updateSql_UserLogout(fieldUser->sock) == -1)
-											error_handling("REQUEST_LOGIN error");
-
-										if(fieldUser != NULL)
-											free(fieldUser);
+                                        if(logout_exitUser(fieldUser->sock) == -1)
+                                            error_handling("REQUEST_LOGIN_5 error");
 										continue;
 									}
 
@@ -297,14 +252,8 @@ int main(int argc, char * argv[])
 
 									if (sendCommand(ep_events[i].data.fd, OTHER_USER_MAP_MOVE, imsiSendBuf, sizeof(StructCustomUser)) <= 0)
 									{
-										close(ep_events[i].data.fd);
-										printf("closed client : %d\n", ep_events[i].data.fd);
-
-										if (updateSql_UserLogout(ep_events[i].data.fd) == -1)
-											error_handling("REQUEST_LOGIN error");
-
-										if (fieldUser != NULL)
-											free(fieldUser);
+                                        if(logout_exitUser(ep_events[i].data.fd) == -1)
+                                            error_handling("REQUEST_LOGIN_6 error");
 										continue;
 									}
 
@@ -320,11 +269,8 @@ int main(int argc, char * argv[])
 							else
 								if (sendCommand(ep_events[i].data.fd, code, "login fail", strlen("login fail")) <= 0)
 								{
-									close(ep_events[i].data.fd);
-									printf("closed client : %d\n", ep_events[i].data.fd);
-
-									if (updateSql_UserLogout(ep_events[i].data.fd) == -1)
-										error_handling("REQUEST_LOGIN error");
+                                    if(logout_exitUser(ep_events[i].data.fd) == -1)
+                                        error_handling("REQUEST_LOGIN_7 error");
 									continue;
 								}
 						}
@@ -349,7 +295,7 @@ int main(int argc, char * argv[])
 								userInteraction(ep_events[i].data.fd, OTHER_USER_MAP_MOVE, sendBuf, sizeof(StructCustomUser));
 
 								if(updateUserMove(currentUser) == -1)
-									error_handling("USER_MOVE_UPDATE error");
+									error_handling("USER_MOVE_UPDATE_1 error");
 
 								//맵에서 나가고 나서 다른 맵에 진입할때 다른 유저들한테 보냄.
 								currentUser.action = ACTION_MAP_IN;
@@ -357,19 +303,14 @@ int main(int argc, char * argv[])
 								userList = selectSql_fieldUsers(ep_events[i].data.fd);
 
 								if(userList == NULL)
-									error_handling("USER_MOVE_UPDATE error");
+									error_handling("USER_MOVE_UPDATE_2 error");
 
 								while ((fieldUser = getStructCustomUserList(userList)) != NULL)
 								{
 									if (sendCommand(fieldUser->sock, OTHER_USER_MAP_MOVE, sendBuf, sizeof(StructCustomUser)) <= 0)
 									{
-										close(fieldUser->sock);
-										printf("closed client : %d\n", fieldUser->sock);
-
-										if (updateSql_UserLogout(fieldUser->sock) == -1)
-											error_handling("USER_MOVE_UPDATE error");
-										if (fieldUser != NULL)
-											free(fieldUser);
+                                        if(logout_exitUser(fieldUser->sock) == -1)
+                                            error_handling("USER_MOVE_UPDATE_3 error");
 										continue;
 									}
 
@@ -379,14 +320,8 @@ int main(int argc, char * argv[])
 
 									if (sendCommand(ep_events[i].data.fd, OTHER_USER_MAP_MOVE, imsiSendBuf, sizeof(StructCustomUser)) <= 0)
 									{
-										close(ep_events[i].data.fd);
-										printf("closed client : %d\n", ep_events[i].data.fd);
-
-										if (updateSql_UserLogout(ep_events[i].data.fd) == -1)
-											error_handling("USER_MOVE_UPDATE error");
-
-										if (fieldUser != NULL)
-											free(fieldUser);
+                                        if(logout_exitUser(ep_events[i].data.fd) == -1)
+                                            error_handling("USER_MOVE_UPDATE_4 error");
 										continue;
 									}
 
@@ -401,7 +336,7 @@ int main(int argc, char * argv[])
 							{
 								//현재 맵에서 이동할때.
 								if(updateUserMove(currentUser) <= 0)
-									error_handling("USER_MOVE_UPDATE error");
+									error_handling("USER_MOVE_UPDATE_5 error");
 
 								memcpy(sendBuf, &currentUser, sizeof(StructCustomUser));
 
@@ -426,21 +361,21 @@ int main(int argc, char * argv[])
 						{
 							//로그인 시간을 업데이트한다.
 							if (updateSql_UserLogin(ep_events[i].data.fd, readBuf) == -1)
-								error_handling("UPDATE_LOGIN_TIME error");
+								error_handling("UPDATE_LOGIN_TIME_1 error");
 						}
 						break;
 					//우저가 타일맵 자료 요청시
 					case REQUEST_TILED_MAP:
 						{
 							if(sendFileData(ep_events[i].data.fd, code, readBuf) == -1)
-								error_handling("REQUEST_TILED_MAP error");
+								error_handling("REQUEST_TILED_MAP_1 error");
 						}
 						break;
 					//유저가 이미지 자료 요청시
 					case REQUEST_IMAGE:
 						{
 							if (sendFileData(ep_events[i].data.fd, code, readBuf) == -1)
-								error_handling("REQUEST_IMAGE error");
+								error_handling("REQUEST_IMAGE_1 error");
 						}
 						break;
 					//유저가 땅에 떨어진 아이템을 먹을시
@@ -451,11 +386,11 @@ int main(int argc, char * argv[])
 
 							//맵의 아이템을 지운다.
 							if(deleteMapObject(imsiItemInfo.idx) == -1)
-								error_handling("DELETE_FIELD_ITEM error");
+								error_handling("DELETE_FIELD_ITEM_1 error");
 
 							//맵의 아이템을 인벤토리에 추가한다.
 							if(insertInventoryItem(ep_events[i].data.fd, imsiItemInfo) == -1)
-								error_handling("DELETE_FIELD_ITEM error");
+								error_handling("DELETE_FIELD_ITEM_2 error");
 
 							//다른 유저에게 알림
 							userInteraction(ep_events[i].data.fd, code, readBuf, sizeof(StructCustomObject));
@@ -489,11 +424,8 @@ int main(int argc, char * argv[])
 
 							if (sendCommand(ep_events[i].data.fd, code, imsiSendBuf, sizeof(int) + sizeof(StructCustomObject) * objectCount) <= 0)
 							{
-								close(ep_events[i].data.fd);
-								printf("closed client : %d\n", ep_events[i].data.fd);
-
-								if (updateSql_UserLogout(ep_events[i].data.fd) == -1)
-									error_handling("REQUEST_FIELD_INFO error");
+                                if(logout_exitUser(ep_events[i].data.fd) == -1)
+                                    error_handling("REQUEST_FIELD_INFO_1 error");
 							}
 
 							free(imsiSendBuf);
@@ -528,11 +460,8 @@ int main(int argc, char * argv[])
 
 							if (sendCommand(ep_events[i].data.fd, code, imsiSendBuf, sizeof(int) + sizeof(StructCustomObject) * objectCount) <= 0)
 							{
-								close(ep_events[i].data.fd);
-								printf("closed client : %d\n", ep_events[i].data.fd);
-
-								if (updateSql_UserLogout(ep_events[i].data.fd) == -1)
-									error_handling("REQUEST_INVENTORY_ITEM_INFO error");
+                                if(logout_exitUser(ep_events[i].data.fd) == -1)
+                                    error_handling("REQUEST_INVENTORY_ITEM_INFO_1 error");
 							}
 
 							free(imsiSendBuf);
@@ -547,7 +476,7 @@ int main(int argc, char * argv[])
 
 							//인벤토리의 아이템 정보를 수정한다.
 							if (updateInventoryItem(ep_events[i].data.fd, imsiItemInfo) == -1)
-								error_handling("MOVE_INVENTORY_ITEM error");
+								error_handling("MOVE_INVENTORY_ITEM_1 error");
 						}
 						break;
 					case THROW_ITEM:
@@ -594,7 +523,7 @@ void error_handling(char * message)
 {
 	fputs(message, stderr);
 	fputc('\n', stderr);
-	exit(1);
+	exit(-1);
 }
 
 int sendCommand(int sock, int code, char * message, int size)
@@ -672,7 +601,7 @@ void userInteraction(int sock, int code, char * message, int size)
 			printf("Other User Send Error!! : user(%d)\n", fieldUser->sock);
 
 			if (updateSql_UserLogout(fieldUser->sock) == -1)
-				error_handling("REQUEST_INVENTORY_ITEM_INFO error");
+				error_handling("userInteraction error");
 		}
 
 		free(fieldUser);
@@ -727,9 +656,9 @@ int sendFileData(int sock, int code, char * filename)
 
 	if (sendCommand(sock, code, fileBuf, size) <= 0)
 	{
+        if(logout_exitUser(sock) == -1)
+            error_handling("sendFileData error");
 		printf("File Send Fail! : %s\n", filename);
-		close(sock);
-		printf("closed client : %d\n", sock);
 
 		free(fileBuf);
 		close(fp);
@@ -739,4 +668,36 @@ int sendFileData(int sock, int code, char * filename)
 	free(fileBuf);
 	close(fp);
 	return 1;
+}
+
+int logout_exitUser(int sock)
+{
+    char sendBuf[BUF_SIZE];
+    //종료하는 유저 아이디 불러옴.
+    StructCustomUser * exitUser = selectSql_UserInfo(sock);
+    
+    //로그인한 사용자일시 처리.
+    if(exitUser != NULL)
+    {
+        exitUser->action = ACTION_MAP_OUT;
+        
+        //로그아웃한 시간을 DB에 반영
+        if (updateLogoutDateTime(sock) == -1)
+            error_handling("updateLogoutDateTime error");
+        
+        //종료시 해당 맵의 다른 유저들에게 자기정보를 보내준다.
+        memcpy(sendBuf, exitUser, sizeof(StructCustomUser));
+        userInteraction(sock, OTHER_USER_MAP_MOVE, sendBuf, sizeof(StructCustomUser));
+        free(exitUser);
+    }
+    
+    //epoll_ctl(epfd, EPOLL_CTL_DEL, sock, NULL);
+    close(sock);
+    printf("closed client : %d\n", sock);
+    
+    //유저 정보를 DB에 업데이트
+    if(updateSql_UserLogout(sock) == -1)
+        error_handling("updateSql_UserLogout error");
+    
+    return 1;
 }
