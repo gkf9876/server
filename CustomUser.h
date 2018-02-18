@@ -1,4 +1,4 @@
-﻿#ifndef __CUSTOM_USER_H_
+#ifndef __CUSTOM_USER_H_
 #define __CUSTOM_USER_H_
 
 #include <stdio.h>
@@ -9,6 +9,8 @@
 #define ACTION_MAP_OUT		2
 #define ACTION_MAP_POTAL	3
 #define ACTION_MAP_MOVE_END	4
+#define ACTION_ATTACK       5
+#define ACTION_ATTACK_END   6
 
 typedef struct
 {
