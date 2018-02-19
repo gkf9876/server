@@ -1,4 +1,4 @@
-﻿#ifndef __CUSTOM_OBJECT_H_
+#ifndef __CUSTOM_OBJECT_H_
 #define __CUSTOM_OBJECT_H_
 
 #include <stdio.h>
@@ -14,6 +14,8 @@ typedef struct
 	int order;
 	char fileDir[100];
 	int count;
+    int hp;
+    int object_number;
 }StructCustomObject;
 
 typedef struct structCustomObjectList

@@ -325,7 +325,7 @@ StructCustomObjectList * selectSql_field_info(char * field)
 {
 	char query[QUERY_BUF_SIZE];
 
-	sprintf(query, "SELECT A.idx, A.name, A.type, A.xpos, A.ypos, A.z_order, A.file_dir, A.count FROM MAP_INFO A WHERE FIELD = '%s'", field);
+	sprintf(query, "SELECT A.idx, A.name, A.type, A.xpos, A.ypos, A.z_order, A.file_dir, A.count, A.hp, A.object_number FROM MAP_INFO A WHERE FIELD = '%s'", field);
 
 	query_stat = mysql_query(connection, query);
 	if (query_stat != 0)
@@ -350,6 +350,8 @@ StructCustomObjectList * selectSql_field_info(char * field)
 		object->order = atoi(sql_row[5]);
 		strcpy(object->fileDir, sql_row[6]);
 		object->count = atoi(sql_row[7]);
+        object->hp = atoi(sql_row[8]);
+        object->object_number = atoi(sql_row[9]);
 
 		insertStructCustomObjectList(objectList, object);
 	}
@@ -475,8 +477,9 @@ int insertSql_mapObject(char * field, StructCustomObject structCustomObject)
 	char fileDir[100];
 	strcpy(fileDir, structCustomObject.fileDir);
 	int count = structCustomObject.count;
+    int hp = structCustomObject.hp;
 
-	sprintf(query, "INSERT INTO MAP_INFO(IDX, NAME, TYPE, XPOS, YPOS, Z_ORDER, FILE_DIR, FIELD, COUNT) VALUES('%d', '%s', '%s', '%d', '%d', '%d', '%s', '%s', '%d')", idx, name, type, xpos, ypos, order, fileDir, field, count);
+	sprintf(query, "INSERT INTO MAP_INFO(IDX, NAME, TYPE, XPOS, YPOS, Z_ORDER, FILE_DIR, FIELD, COUNT, HP) VALUES('%d', '%s', '%s', '%d', '%d', '%d', '%s', '%s', '%d')", idx, name, type, xpos, ypos, order, fileDir, field, count, hp);
 
 	query_stat = mysql_query(connection, query);
 
