@@ -32,8 +32,8 @@
 #define MOVE_INVENTORY_ITEM				13
 #define THROW_ITEM						14
 
-//#define CUR_PATH						"/home/gkf9876/server/Resources/"
-#define CUR_PATH						"/home/pi/server/Resources/"
+#define CUR_PATH						"/home/gkf9876/server/Resources/"
+//#define CUR_PATH						"/home/pi/server/Resources/"
 
 void error_handling(char * message);
 int sendCommand(int sock, int code, char * message, int size);
@@ -49,6 +49,8 @@ void CharToInt(char * value, int * result);
 int sendFileData(int sock, int code, char * filename);
 
 int logout_exitUser(int sock);
+
+pthread_mutex_t mutex;
 
 int main(int argc, char * argv[])
 {
@@ -82,6 +84,8 @@ int main(int argc, char * argv[])
 		return -1;
 	}
 
+	pthread_mutex_init(&mutex, NULL);
+
 	if(argc != 2)
 	{
 		printf("Usage : %s <port>\n", argv[0]);
@@ -112,13 +116,19 @@ int main(int argc, char * argv[])
 
 		if (dateCount / 100 == 0)
 		{
+			pthread_mutex_lock(&mutex);
+
 			//1초마다 DB시간 업데이트
 			if (updateDate(1) == -1)
 				error_handling("updateDate error");
+
+			pthread_mutex_unlock(&mutex);
 		}
         
 		if(dateCount / 1000 == 0)
 		{
+			pthread_mutex_lock(&mutex);
+
 			//10초마다 접속한 유저 확인
 			sql_result = selectSql_comfirmTrueNowLoginUser();
 
@@ -136,6 +146,8 @@ int main(int argc, char * argv[])
 			mysql_free_result(sql_result);
 
 			dateCount = 0;
+
+			pthread_mutex_unlock(&mutex);
 		}
         
 		if(event_cnt == -1)
@@ -159,11 +171,18 @@ int main(int argc, char * argv[])
 			{
 				if(readCommand(ep_events[i].data.fd, &code, readBuf) <= 0)
 				{
+					printf("code : %d, readBuf : %s\n", code, readBuf);
+					pthread_mutex_lock(&mutex);
+
                     if(logout_exitUser(ep_events[i].data.fd) == -1)
                         error_handling("readCommand error");
+
+					pthread_mutex_unlock(&mutex);
 				}
 				else
 				{
+					pthread_mutex_lock(&mutex);
+
 					switch(code)
 					{
 					case REQUEST_USER_INFO:			//유저 정보 요청시
@@ -506,6 +525,7 @@ int main(int argc, char * argv[])
 						break;
 					}
 
+					pthread_mutex_unlock(&mutex);
 					memset(readBuf, 0, BUF_SIZE);
 					memset(sendBuf, 0, BUF_SIZE);
 				}
@@ -513,6 +533,7 @@ int main(int argc, char * argv[])
 		}
 	}
 
+	pthread_mutex_destroy(&mutex);
 	closeMySQL_chatting();
 	close(serv_sock);
 	close(epfd);

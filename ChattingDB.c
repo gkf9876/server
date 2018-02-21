@@ -479,7 +479,7 @@ int insertSql_mapObject(char * field, StructCustomObject structCustomObject)
 	int count = structCustomObject.count;
     int hp = structCustomObject.hp;
 
-	sprintf(query, "INSERT INTO MAP_INFO(IDX, NAME, TYPE, XPOS, YPOS, Z_ORDER, FILE_DIR, FIELD, COUNT, HP) VALUES('%d', '%s', '%s', '%d', '%d', '%d', '%s', '%s', '%d')", idx, name, type, xpos, ypos, order, fileDir, field, count, hp);
+	sprintf(query, "INSERT INTO MAP_INFO(IDX, NAME, TYPE, XPOS, YPOS, Z_ORDER, FILE_DIR, FIELD, COUNT, HP) VALUES('%d', '%s', '%s', '%d', '%d', '%d', '%s', '%s', '%d', '%d')", idx, name, type, xpos, ypos, order, fileDir, field, count, hp);
 
 	query_stat = mysql_query(connection, query);
 
