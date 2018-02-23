@@ -54,7 +54,7 @@ MYSQL_RES * selectSql_comfirmTrueNowLoginUser();
 StructCustomObjectList * selectSql_field_info(char * field);
 
 //맵의 아이템을 지움
-int deleteMapObject(int idx);
+int deleteMapObject(int object_number);
 
 //인벤토리에 아이템을 넣어준다.
 int insertInventoryItem(int sock, StructCustomObject structCustomObject);
@@ -73,5 +73,8 @@ int deleteSql_inventoryItem(StructCustomObject structCustomObject);
 
 //유저가 위치한 맵 이름을 불러온다.
 char * selectSql_userField_info(int sock);
+
+//몬스터의 에너지 업데이트
+int updateSql_monsterHp(StructCustomObject structCustomObject);
 
 #endif

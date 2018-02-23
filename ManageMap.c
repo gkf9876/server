@@ -7,6 +7,81 @@ int 		manageMap_query_stat;
 
 extern pthread_mutex_t mutex;
 
+void thread_error_handling(char * message)
+{
+	fputs(message, stderr);
+	fputc('\n', stderr);
+	exit(-1);
+}
+
+int thread_sendCommand(int sock, int code, char * message, int size)
+{
+	int writeLen;
+	char * buf;
+
+	if (message == NULL)
+		return -1;
+
+	buf = (char*)malloc(size + 9);
+	thread_IntToChar(size, &buf[0]);
+	thread_IntToChar(code, &buf[4]);
+	//strcpy(&buf[8], message);
+
+	writeLen = write(sock, buf, 8);
+	writeLen += write(sock, message, size);
+
+	free(buf);
+
+	if (writeLen <= 0)
+		return -1;
+	else
+		return writeLen;
+}
+
+int thread_readCommand(int sock, int * code, char * buf)
+{
+	int len;
+	int readLen;
+
+	if (buf == NULL)
+		return -1;
+
+	if ((readLen = read(sock, buf, 4)) == -1)
+		return -1;
+	else if (readLen == 0)
+		return 0;
+
+	thread_CharToInt(&buf[0], &len);
+
+	if ((readLen = read(sock, buf, 4)) == -1)
+		return -1;
+
+	thread_CharToInt(&buf[0], code);
+
+	if ((readLen = read(sock, buf, len)) == -1)
+		return -1;
+
+	buf[len] = 0;
+
+	return len;
+}
+
+void thread_IntToChar(int value, char * result)
+{
+	result[0] = (value & 0xff000000) >> 24;
+	result[1] = (value & 0x00ff0000) >> 16;
+	result[2] = (value & 0x0000ff00) >> 8;
+	result[3] = (value & 0x000000ff);
+}
+
+void thread_CharToInt(char * value, int * result)
+{
+	*result = (int)(((unsigned char)value[0] << 24) & 0xff000000);
+	*result += (int)(((unsigned char)value[1] << 16) & 0x00ff0000);
+	*result += (int)(((unsigned char)value[2] << 8) & 0x0000ff00);
+	*result += (unsigned char)value[3];
+}
+
 int openMySQL_manageMap()
 {
 	mysql_init(&manageMap_conn);
@@ -68,11 +143,11 @@ int insertMapMonster(char * field, char * name, int xpos, int ypos)
 {
 	char query[QUERY_BUF_SIZE];
 
-	sprintf(query, "INSERT INTO MAP_INFO(FIELD, IDX, NAME, TYPE, XPOS, YPOS, FILE_DIR, HP) ");
-	sprintf(&query[strlen(query)], "SELECT '%s' AS FIELD, IDX, NAME, ", field);
-	sprintf(&query[strlen(query)], "'monster' AS TYPE, '%d' AS XPOS, '%d' AS YPOS, FILE_DIR, HP ", xpos, ypos);
-	sprintf(&query[strlen(query)], "FROM MONSTER_LIST ");
-	sprintf(&query[strlen(query)], "WHERE NAME = '%s'", name);
+	sprintf(query,					"INSERT INTO MAP_INFO(FIELD, IDX, NAME, TYPE, XPOS, YPOS, FILE_DIR, HP) ");
+	sprintf(&query[strlen(query)],	"SELECT '%s' AS FIELD, IDX, NAME, ", field);
+	sprintf(&query[strlen(query)],	"'monster' AS TYPE, '%d' AS XPOS, '%d' AS YPOS, FILE_DIR, HP ", xpos, ypos);
+	sprintf(&query[strlen(query)],	"FROM MONSTER_LIST ");
+	sprintf(&query[strlen(query)],	"WHERE NAME = '%s'", name);
 
 	manageMap_query_stat = mysql_query(manageMap_connection, query);
 
@@ -81,6 +156,38 @@ int insertMapMonster(char * field, char * name, int xpos, int ypos)
 		fprintf(stderr, "Manage Map Mysql insert query error : %s\n", mysql_error(&manageMap_conn));
 		fprintf(stderr, "Sql : %s\n", query);
 		return -1;
+	}
+
+	StructCustomObject * monsterInfo = selectSql_monsterInfo(name);
+
+	if (monsterInfo != NULL && strcmp(monsterInfo->name, "nameless"))
+	{
+		monsterInfo->xpos = xpos;
+		monsterInfo->ypos = ypos;
+
+		char sendBuf[BUF_SIZE];
+		memcpy(sendBuf, monsterInfo, sizeof(StructCustomObject));
+
+		if (monsterInfo != NULL)
+			free(monsterInfo);
+
+		StructCustomUser * user = NULL;
+		StructCustomUserList * userList = selectSql_loginUserList(field);
+
+		while ((user = getStructCustomUserList(userList)) != NULL)
+		{
+			if (thread_sendCommand(user->sock, REGEN_MONSTER, sendBuf, sizeof(StructCustomObject)) <= 0)
+			{
+				if(updateSql_threadUserLogout(user->sock) == -1)
+					thread_error_handling("updateSql_threadUserLogout error");
+			}
+
+			if (user != NULL)
+				free(user);
+		}
+
+		if (userList != NULL)
+			free(userList);
 	}
 
 	return 1;
@@ -97,11 +204,98 @@ MYSQL_RES * selectSql_MapMonster(char * field)
 	{
 		fprintf(stderr, "Manage Map Mysql select query error : %s\n", mysql_error(&manageMap_conn));
 		fprintf(stderr, "Manage Map Sql : %s\n", query);
+		return NULL;
 	}
 
 	manageMap_sql_result = mysql_store_result(manageMap_connection);
 
 	return manageMap_sql_result;
+}
+
+StructCustomUserList * selectSql_loginUserList(char * field)
+{
+	char query[QUERY_BUF_SIZE];
+
+	sprintf(query, "SELECT * FROM USER_LIST A WHERE LOGIN = '1' AND FIELD = '%s'", field);
+
+	manageMap_query_stat = mysql_query(manageMap_connection, query);
+	if (manageMap_query_stat != 0)
+	{
+		fprintf(stderr, "Mysql select query error : %s\n", mysql_error(&manageMap_conn));
+		fprintf(stderr, "Sql : %s\n", query);
+		return NULL;
+	}
+
+	manageMap_sql_result = mysql_store_result(manageMap_connection);
+
+	StructCustomUserList * userList = (StructCustomUserList*)malloc(sizeof(StructCustomUserList));
+	initStructCustomUserList(userList);
+
+	while ((manageMap_sql_row = mysql_fetch_row(manageMap_sql_result)) != NULL)
+	{
+		StructCustomUser * user = (StructCustomUser*)malloc(sizeof(StructCustomUser));
+		user->sock = atoi(manageMap_sql_row[6]);
+		strcpy(user->name, manageMap_sql_row[1]);
+		user->xpos = atoi(manageMap_sql_row[2]);
+		user->ypos = atoi(manageMap_sql_row[3]);
+		strcpy(user->field, manageMap_sql_row[4]);
+		user->seeDirection = atoi(manageMap_sql_row[7]);
+
+		insertStructCustomUserList(userList, user);
+	}
+	mysql_free_result(manageMap_sql_result);
+
+	return userList;
+}
+
+StructCustomObject * selectSql_monsterInfo(char * name)
+{
+	char query[QUERY_BUF_SIZE];
+
+	sprintf(query, "SELECT * FROM MONSTER_LIST WHERE NAME = '%s'", name);
+
+	manageMap_query_stat = mysql_query(manageMap_connection, query);
+	if (manageMap_query_stat != 0)
+	{
+		fprintf(stderr, "Mysql select query error : %s\n", mysql_error(&manageMap_conn));
+		fprintf(stderr, "Sql : %s\n", query);
+		return NULL;
+	}
+
+	manageMap_sql_result = mysql_store_result(manageMap_connection);
+
+	StructCustomObject * monsterInfo = (StructCustomObject*)malloc(sizeof(StructCustomObject));
+	strcpy(monsterInfo->name, "nameless");
+
+	while ((manageMap_sql_row = mysql_fetch_row(manageMap_sql_result)) != NULL)
+	{
+		monsterInfo->idx = atoi(manageMap_sql_row[0]);
+		strcpy(monsterInfo->name, manageMap_sql_row[1]);
+		strcpy(monsterInfo->type, manageMap_sql_row[2]);
+		strcpy(monsterInfo->fileDir, manageMap_sql_row[3]);
+		monsterInfo->hp = atoi(manageMap_sql_row[4]);
+	}
+	mysql_free_result(manageMap_sql_result);
+
+	return monsterInfo;
+}
+
+int updateSql_threadUserLogout(int sock)
+{
+	char query[QUERY_BUF_SIZE];
+
+	sprintf(query, "UPDATE USER_LIST SET LOGIN = '0', SOCK = '0' WHERE SOCK = '%d' AND LOGIN = '1'", sock);
+
+	manageMap_query_stat = mysql_query(manageMap_connection, query);
+
+	if (manageMap_query_stat != 0)
+	{
+		fprintf(stderr, "Mysql update query error : %s\n", mysql_error(&manageMap_conn));
+		fprintf(stderr, "Sql : %s\n", query);
+		return -1;
+	}
+
+	return 1;
 }
 
 //맵관리 쓰레드
@@ -150,6 +344,13 @@ void * manageMapThread_main(void * arg)
             monster1Count = atoi(manageMap_sql_row[4]);
             monster2Count = atoi(manageMap_sql_row[5]);
             monster3Count = atoi(manageMap_sql_row[6]);
+
+			//if (!strcmp("TileMaps/KonyangUniv.Daejeon/JukhunDigitalFacilitie/floor_08/floor.tmx", field))
+			//{
+			//	printf("currentMonster1Count(%d), monster1Count(%d)\n", currentMonster1Count, monster1Count);
+			//	printf("currentMonster2Count(%d), monster2Count(%d)\n", currentMonster2Count, monster2Count);
+			//	printf("currentMonster3Count(%d), monster3Count(%d)\n", currentMonster3Count, monster3Count);
+			//}
 
             sprintf(file_dir, "Resources/%s", field);
 
@@ -219,7 +420,7 @@ void * manageMapThread_main(void * arg)
         mysql_free_result(manageMap_sql_result);
 
 		pthread_mutex_unlock(&mutex);
-		//sleep(5);
+		sleep(1);
 	}
 
     closeMySQL_manageMap();

@@ -31,6 +31,8 @@
 #define REQUEST_INVENTORY_ITEM_INFO		12
 #define MOVE_INVENTORY_ITEM				13
 #define THROW_ITEM						14
+#define REGEN_MONSTER					15
+#define ATTACK_FILED_OBJECT				16
 
 #define CUR_PATH						"/home/gkf9876/server/Resources/"
 //#define CUR_PATH						"/home/pi/server/Resources/"
@@ -182,6 +184,8 @@ int main(int argc, char * argv[])
 				else
 				{
 					pthread_mutex_lock(&mutex);
+
+					printf("code : %d, readBuf : %s\n", code, readBuf);
 
 					switch(code)
 					{
@@ -404,7 +408,7 @@ int main(int argc, char * argv[])
 							memcpy(&imsiItemInfo, readBuf, sizeof(StructCustomObject));
 
 							//맵의 아이템을 지운다.
-							if(deleteMapObject(imsiItemInfo.idx) == -1)
+							if(deleteMapObject(imsiItemInfo.object_number) == -1)
 								error_handling("DELETE_FIELD_ITEM_1 error");
 
 							//맵의 아이템을 인벤토리에 추가한다.
@@ -518,6 +522,16 @@ int main(int argc, char * argv[])
 
 							if(field != NULL)
 								free(field);
+						}
+						break;
+					case ATTACK_FILED_OBJECT:
+						{
+							StructCustomObject monsterInfo;
+							memcpy(&monsterInfo, readBuf, sizeof(StructCustomObject));
+
+							//몬스터의 에너지를 변경한다.
+							if (updateSql_monsterHp(monsterInfo) == -1)
+								error_handling("KILL_FILED_MONSTER_1 error");
 						}
 						break;
 					default:

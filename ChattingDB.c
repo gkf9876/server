@@ -360,11 +360,11 @@ StructCustomObjectList * selectSql_field_info(char * field)
 	return objectList;
 }
 
-int deleteMapObject(int idx)
+int deleteMapObject(int object_number)
 {
 	char query[QUERY_BUF_SIZE];
 
-	sprintf(query, "DELETE FROM MAP_INFO WHERE IDX = '%d'", idx);
+	sprintf(query, "DELETE FROM MAP_INFO WHERE OBJECT_NUMBER = '%d'", object_number);
 
 	query_stat = mysql_query(connection, query);
 
@@ -552,4 +552,36 @@ char * selectSql_userField_info(int sock)
 	mysql_free_result(sql_result);
 
 	return result;
+}
+
+int updateSql_monsterHp(StructCustomObject structCustomObject)
+{
+	char query[QUERY_BUF_SIZE];
+
+	int idx = structCustomObject.idx;
+	char name[50];
+	strcpy(name, structCustomObject.name);
+	char type[50];
+	strcpy(type, structCustomObject.type);
+	int xpos = structCustomObject.xpos;
+	int ypos = structCustomObject.ypos;
+	int order = structCustomObject.order;
+	char fileDir[100];
+	strcpy(fileDir, structCustomObject.fileDir);
+	int count = structCustomObject.count;
+	int hp = structCustomObject.hp;
+	int object_number = structCustomObject.object_number;
+
+	sprintf(query, "UPDATE MAP_INFO SET HP = '%d' WHERE NAME = '%s' AND OBJECT_NUMBER = '%d'", hp, name, object_number);
+
+	query_stat = mysql_query(connection, query);
+
+	if (query_stat != 0)
+	{
+		fprintf(stderr, "Mysql Update query error : %s\n", mysql_error(&conn));
+		fprintf(stderr, "Sql : %s\n", query);
+		return -1;
+	}
+
+	return 1;
 }
