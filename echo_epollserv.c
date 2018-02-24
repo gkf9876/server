@@ -532,6 +532,9 @@ int main(int argc, char * argv[])
 							//몬스터의 에너지를 변경한다.
 							if (updateSql_monsterHp(monsterInfo) == -1)
 								error_handling("KILL_FILED_MONSTER_1 error");
+
+							//다른 유저에게 알림
+							userInteraction(ep_events[i].data.fd, code, readBuf, sizeof(StructCustomObject));
 						}
 						break;
 					default:

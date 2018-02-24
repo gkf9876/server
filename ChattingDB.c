@@ -572,7 +572,10 @@ int updateSql_monsterHp(StructCustomObject structCustomObject)
 	int hp = structCustomObject.hp;
 	int object_number = structCustomObject.object_number;
 
-	sprintf(query, "UPDATE MAP_INFO SET HP = '%d' WHERE NAME = '%s' AND OBJECT_NUMBER = '%d'", hp, name, object_number);
+	if (hp > 0)
+		sprintf(query, "UPDATE MAP_INFO SET HP = '%d' WHERE NAME = '%s' AND OBJECT_NUMBER = '%d'", hp, name, object_number);
+	else
+		sprintf(query, "DELETE FROM MAP_INFO WHERE NAME = '%s' AND OBJECT_NUMBER = '%d'", name, object_number);
 
 	query_stat = mysql_query(connection, query);
 
