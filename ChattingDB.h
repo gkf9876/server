@@ -51,7 +51,7 @@ int updateLogoutDateTime(int sock);
 MYSQL_RES * selectSql_comfirmTrueNowLoginUser();
 
 //맵 정보를 가져옴.
-StructCustomObjectList * selectSql_field_info(char * field);
+StructCustomObjectList * selectSql_field_info(char * field, char * type);
 
 //맵의 아이템을 지움
 int deleteMapObject(int object_number);

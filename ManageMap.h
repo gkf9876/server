@@ -34,12 +34,13 @@
 #define REQUEST_TILED_MAP				8
 #define REQUEST_IMAGE					9
 #define DELETE_FIELD_ITEM				10
-#define REQUEST_FIELD_INFO				11
-#define REQUEST_INVENTORY_ITEM_INFO		12
-#define MOVE_INVENTORY_ITEM				13
-#define THROW_ITEM						14
-#define REGEN_MONSTER					15
-#define ATTACK_FILED_OBJECT				16
+#define REQUEST_FIELD_ITEM_INFO			11
+#define REQUEST_FIELD_MONSTER_INFO		12
+#define REQUEST_INVENTORY_ITEM_INFO		13
+#define MOVE_INVENTORY_ITEM				14
+#define THROW_ITEM						15
+#define REGEN_MONSTER					16
+#define ATTACK_FILED_OBJECT				17
 
 void thread_error_handling(char * message);
 int thread_sendCommand(int sock, int code, char * message, int size);

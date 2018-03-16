@@ -321,11 +321,11 @@ MYSQL_RES * selectSql_comfirmTrueNowLoginUser()
 	return sql_result;
 }
 
-StructCustomObjectList * selectSql_field_info(char * field)
+StructCustomObjectList * selectSql_field_info(char * field, char * type)
 {
 	char query[QUERY_BUF_SIZE];
 
-	sprintf(query, "SELECT A.idx, A.name, A.type, A.xpos, A.ypos, A.z_order, A.file_dir, A.count, A.hp, A.object_number FROM MAP_INFO A WHERE FIELD = '%s'", field);
+	sprintf(query, "SELECT A.idx, A.name, A.type, A.xpos, A.ypos, A.z_order, A.file_dir, A.count, A.hp, A.object_number FROM MAP_INFO A WHERE FIELD = '%s' AND TYPE = '%s'", field, type);
 
 	query_stat = mysql_query(connection, query);
 	if (query_stat != 0)

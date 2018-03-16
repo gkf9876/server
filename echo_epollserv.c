@@ -27,12 +27,13 @@
 #define REQUEST_TILED_MAP				8
 #define REQUEST_IMAGE					9
 #define DELETE_FIELD_ITEM				10
-#define REQUEST_FIELD_INFO				11
-#define REQUEST_INVENTORY_ITEM_INFO		12
-#define MOVE_INVENTORY_ITEM				13
-#define THROW_ITEM						14
-#define REGEN_MONSTER					15
-#define ATTACK_FILED_OBJECT				16
+#define REQUEST_FIELD_ITEM_INFO			11
+#define REQUEST_FIELD_MONSTER_INFO		12
+#define REQUEST_INVENTORY_ITEM_INFO		13
+#define MOVE_INVENTORY_ITEM				14
+#define THROW_ITEM						15
+#define REGEN_MONSTER					16
+#define ATTACK_FILED_OBJECT				17
 
 #define CUR_PATH						"/home/gkf9876/server/Resources/"
 //#define CUR_PATH						"/home/pi/server/Resources/"
@@ -420,7 +421,7 @@ int main(int argc, char * argv[])
 						}
 						break;
 					//맵정보를 불러올때
-					case REQUEST_FIELD_INFO:
+					case REQUEST_FIELD_ITEM_INFO:
 						{
 							StructCustomObjectList * objectInfo = NULL;
 							StructCustomObject * object = NULL;
@@ -429,7 +430,7 @@ int main(int argc, char * argv[])
 							char * imsiSendBuf;
 
 							//맵의 정보를 출력
-							objectInfo = selectSql_field_info(readBuf);
+							objectInfo = selectSql_field_info(readBuf, "item");
 							objectCount = getObjectCount(objectInfo);
 
 							imsiSendBuf = (char*)malloc(sizeof(int) + sizeof(StructCustomObject) * objectCount);
@@ -449,6 +450,42 @@ int main(int argc, char * argv[])
 							{
                                 if(logout_exitUser(ep_events[i].data.fd) == -1)
                                     error_handling("REQUEST_FIELD_INFO_1 error");
+							}
+
+							free(imsiSendBuf);
+							if (objectInfo != NULL)
+								free(objectInfo);
+						}
+						break;
+					case REQUEST_FIELD_MONSTER_INFO:
+						{
+							StructCustomObjectList * objectInfo = NULL;
+							StructCustomObject * object = NULL;
+							int objectCount;
+							int bufferPlag;
+							char * imsiSendBuf;
+
+							//맵의 정보를 출력
+							objectInfo = selectSql_field_info(readBuf, "monster");
+							objectCount = getObjectCount(objectInfo);
+
+							imsiSendBuf = (char*)malloc(sizeof(int) + sizeof(StructCustomObject) * objectCount);
+							memcpy(&imsiSendBuf[0], &objectCount, sizeof(int));
+							bufferPlag = 4;
+
+							while ((object = getStructCustomObjectList(objectInfo)) != NULL)
+							{
+								memcpy(&imsiSendBuf[bufferPlag], object, sizeof(StructCustomObject));
+								bufferPlag += sizeof(StructCustomObject);
+
+								if (object != NULL)
+									free(object);
+							}
+
+							if (sendCommand(ep_events[i].data.fd, code, imsiSendBuf, sizeof(int) + sizeof(StructCustomObject) * objectCount) <= 0)
+							{
+								if (logout_exitUser(ep_events[i].data.fd) == -1)
+									error_handling("REQUEST_FIELD_INFO_1 error");
 							}
 
 							free(imsiSendBuf);
