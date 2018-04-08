@@ -10,7 +10,7 @@ Target Server Type    : MYSQL
 Target Server Version : 50721
 File Encoding         : 65001
 
-Date: 2018-02-05 22:52:35
+Date: 2018-03-17 15:53:40
 */
 
 SET FOREIGN_KEY_CHECKS=0;
@@ -25,7 +25,7 @@ CREATE TABLE `chatting` (
   `content` varchar(100) DEFAULT '',
   `field` varchar(100) DEFAULT '0',
   PRIMARY KEY (`idx`)
-) ENGINE=InnoDB AUTO_INCREMENT=290 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=294 DEFAULT CHARSET=utf8;
 
 -- ----------------------------
 -- Records of chatting
@@ -319,6 +319,10 @@ INSERT INTO `chatting` VALUES ('286', '2018-01-28 10:23:54', 'GKF1234', 'e', 'Ti
 INSERT INTO `chatting` VALUES ('287', '2018-01-28 10:23:55', 'GKF1234', 'f', 'TileMaps/KonyangUniv.Daejeon/JukhunDigitalFacilitie/floor_08/floor.tmx');
 INSERT INTO `chatting` VALUES ('288', '2018-01-28 10:23:56', 'GKF1234', 'g', 'TileMaps/KonyangUniv.Daejeon/JukhunDigitalFacilitie/floor_08/floor.tmx');
 INSERT INTO `chatting` VALUES ('289', '2018-01-28 10:23:57', 'GKF1234', 'h', 'TileMaps/KonyangUniv.Daejeon/JukhunDigitalFacilitie/floor_08/floor.tmx');
+INSERT INTO `chatting` VALUES ('290', '2018-02-18 16:03:23', 'GKF1234', '\r', 'TileMaps/KonyangUniv.Daejeon/JukhunDigitalFacilitie/floor_08/floor.tmx');
+INSERT INTO `chatting` VALUES ('291', '2018-02-18 16:03:33', 'GKF1234', '\r', 'TileMaps/KonyangUniv.Daejeon/JukhunDigitalFacilitie/floor_08/floor.tmx');
+INSERT INTO `chatting` VALUES ('292', '2018-02-18 18:34:52', 'GKF1234', 'aaaaaaaaaaaaaaaaaaaa', 'TileMaps/KonyangUniv.Daejeon/JukhunDigitalFacilitie/floor_08/floor.tmx');
+INSERT INTO `chatting` VALUES ('293', '2018-02-23 19:09:43', 'GKF9797', 'AA', 'TileMaps/KonyangUniv.Daejeon/JukhunDigitalFacilitie/floor_08/floor.tmx');
 
 -- ----------------------------
 -- Table structure for `inventory_info`
@@ -340,10 +344,10 @@ CREATE TABLE `inventory_info` (
 -- ----------------------------
 -- Records of inventory_info
 -- ----------------------------
-INSERT INTO `inventory_info` VALUES ('1', 'nameless1', 'GKF1234', 'item', '2', '2', '1', 'items/a.png', '7');
-INSERT INTO `inventory_info` VALUES ('2', 'nameless2', 'GKF1234', 'item', '0', '2', '1', 'items/b.png', '6');
-INSERT INTO `inventory_info` VALUES ('4', 'nameless4', 'GKF1234', 'item', '3', '2', '1', 'items/d.png', '3');
-INSERT INTO `inventory_info` VALUES ('5', 'nameless5', 'GKF1234', 'item', '1', '2', '1', 'items/e.png', '30');
+INSERT INTO `inventory_info` VALUES ('1', 'nameless1', 'GKF1234', 'item', '0', '2', '1', 'items/a.png', '364');
+INSERT INTO `inventory_info` VALUES ('2', 'nameless2', 'GKF1234', 'item', '2', '2', '1', 'items/b.png', '192');
+INSERT INTO `inventory_info` VALUES ('4', 'nameless4', 'GKF1234', 'item', '1', '2', '1', 'items/d.png', '162');
+INSERT INTO `inventory_info` VALUES ('5', 'nameless5', 'GKF9876', 'item', '0', '2', '1', 'items/e.png', '30');
 
 -- ----------------------------
 -- Table structure for `map_info`
@@ -360,27 +364,28 @@ CREATE TABLE `map_info` (
   `z_order` int(11) DEFAULT '1',
   `file_dir` varchar(100) DEFAULT NULL,
   `count` int(11) DEFAULT '1',
+  `hp` int(11) DEFAULT NULL,
   PRIMARY KEY (`object_number`,`field`)
-) ENGINE=InnoDB AUTO_INCREMENT=259 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=667 DEFAULT CHARSET=utf8;
 
 -- ----------------------------
 -- Records of map_info
 -- ----------------------------
-INSERT INTO `map_info` VALUES ('244', 'TileMaps/KonyangUniv.Daejeon/JukhunDigitalFacilitie/floor_08/floor.tmx', '1', 'squirrel', 'monster', '40', '11', '1', 'monster/squirrel', '1');
-INSERT INTO `map_info` VALUES ('245', 'TileMaps/KonyangUniv.Daejeon/JukhunDigitalFacilitie/floor_08/floor.tmx', '1', 'squirrel', 'monster', '31', '13', '1', 'monster/squirrel', '1');
-INSERT INTO `map_info` VALUES ('246', 'TileMaps/KonyangUniv.Daejeon/JukhunDigitalFacilitie/floor_08/floor.tmx', '1', 'squirrel', 'monster', '1', '4', '1', 'monster/squirrel', '1');
-INSERT INTO `map_info` VALUES ('247', 'TileMaps/KonyangUniv.Daejeon/JukhunDigitalFacilitie/floor_08/floor.tmx', '1', 'squirrel', 'monster', '17', '1', '1', 'monster/squirrel', '1');
-INSERT INTO `map_info` VALUES ('248', 'TileMaps/KonyangUniv.Daejeon/JukhunDigitalFacilitie/floor_08/floor.tmx', '1', 'squirrel', 'monster', '37', '6', '1', 'monster/squirrel', '1');
-INSERT INTO `map_info` VALUES ('249', 'TileMaps/KonyangUniv.Daejeon/JukhunDigitalFacilitie/floor_08/floor.tmx', '2', 'deer', 'monster', '0', '8', '1', 'monster/deer', '1');
-INSERT INTO `map_info` VALUES ('250', 'TileMaps/KonyangUniv.Daejeon/JukhunDigitalFacilitie/floor_08/floor.tmx', '2', 'deer', 'monster', '9', '2', '1', 'monster/deer', '1');
-INSERT INTO `map_info` VALUES ('251', 'TileMaps/KonyangUniv.Daejeon/JukhunDigitalFacilitie/floor_08/floor.tmx', '2', 'deer', 'monster', '8', '6', '1', 'monster/deer', '1');
-INSERT INTO `map_info` VALUES ('252', 'TileMaps/KonyangUniv.Daejeon/JukhunDigitalFacilitie/floor_08/floor.tmx', '2', 'deer', 'monster', '41', '6', '1', 'monster/deer', '1');
-INSERT INTO `map_info` VALUES ('253', 'TileMaps/KonyangUniv.Daejeon/JukhunDigitalFacilitie/floor_08/floor.tmx', '2', 'deer', 'monster', '3', '0', '1', 'monster/deer', '1');
-INSERT INTO `map_info` VALUES ('254', 'TileMaps/KonyangUniv.Daejeon/JukhunDigitalFacilitie/floor_08/floor.tmx', '2', 'deer', 'monster', '19', '12', '1', 'monster/deer', '1');
-INSERT INTO `map_info` VALUES ('255', 'TileMaps/KonyangUniv.Daejeon/JukhunDigitalFacilitie/floor_08/floor.tmx', '2', 'deer', 'monster', '38', '5', '1', 'monster/deer', '1');
-INSERT INTO `map_info` VALUES ('256', 'TileMaps/KonyangUniv.Daejeon/JukhunDigitalFacilitie/floor_08/floor.tmx', '2', 'deer', 'monster', '8', '13', '1', 'monster/deer', '1');
-INSERT INTO `map_info` VALUES ('257', 'TileMaps/KonyangUniv.Daejeon/JukhunDigitalFacilitie/floor_08/floor.tmx', '2', 'deer', 'monster', '32', '9', '1', 'monster/deer', '1');
-INSERT INTO `map_info` VALUES ('258', 'TileMaps/KonyangUniv.Daejeon/JukhunDigitalFacilitie/floor_08/floor.tmx', '2', 'deer', 'monster', '39', '14', '1', 'monster/deer', '1');
+INSERT INTO `map_info` VALUES ('528', 'TileMaps/KonyangUniv.Daejeon/JukhunDigitalFacilitie/floor_08/floor.tmx', '1', 'squirrel', 'monster', '29', '3', '1', 'monster/squirrel', '1', '50');
+INSERT INTO `map_info` VALUES ('529', 'TileMaps/KonyangUniv.Daejeon/JukhunDigitalFacilitie/floor_08/floor.tmx', '1', 'squirrel', 'monster', '1', '11', '1', 'monster/squirrel', '1', '50');
+INSERT INTO `map_info` VALUES ('622', 'TileMaps/KonyangUniv.Daejeon/JukhunDigitalFacilitie/floor_08/floor.tmx', '2', 'deer', 'monster', '28', '9', '1', 'monster/deer', '1', '100');
+INSERT INTO `map_info` VALUES ('625', 'TileMaps/KonyangUniv.Daejeon/JukhunDigitalFacilitie/floor_08/floor.tmx', '2', 'deer', 'monster', '39', '13', '1', 'monster/deer', '1', '100');
+INSERT INTO `map_info` VALUES ('648', 'TileMaps/KonyangUniv.Daejeon/JukhunDigitalFacilitie/floor_08/floor.tmx', '2', 'deer', 'monster', '3', '12', '1', 'monster/deer', '1', '100');
+INSERT INTO `map_info` VALUES ('651', 'TileMaps/KonyangUniv.Daejeon/JukhunDigitalFacilitie/floor_08/floor.tmx', '2', 'deer', 'monster', '17', '2', '1', 'monster/deer', '1', '30');
+INSERT INTO `map_info` VALUES ('652', 'TileMaps/KonyangUniv.Daejeon/JukhunDigitalFacilitie/floor_08/floor.tmx', '2', 'deer', 'monster', '29', '10', '1', 'monster/deer', '1', '100');
+INSERT INTO `map_info` VALUES ('657', 'TileMaps/KonyangUniv.Daejeon/JukhunDigitalFacilitie/floor_08/floor.tmx', '2', 'deer', 'monster', '39', '12', '1', 'monster/deer', '1', '100');
+INSERT INTO `map_info` VALUES ('660', 'TileMaps/KonyangUniv.Daejeon/JukhunDigitalFacilitie/floor_08/floor.tmx', '1', 'squirrel', 'monster', '38', '12', '1', 'monster/squirrel', '1', '50');
+INSERT INTO `map_info` VALUES ('661', 'TileMaps/KonyangUniv.Daejeon/JukhunDigitalFacilitie/floor_08/floor.tmx', '2', 'deer', 'monster', '17', '2', '1', 'monster/deer', '1', '100');
+INSERT INTO `map_info` VALUES ('662', 'TileMaps/KonyangUniv.Daejeon/JukhunDigitalFacilitie/floor_08/floor.tmx', '1', 'squirrel', 'monster', '16', '5', '1', 'monster/squirrel', '1', '50');
+INSERT INTO `map_info` VALUES ('663', 'TileMaps/KonyangUniv.Daejeon/JukhunDigitalFacilitie/floor_08/floor.tmx', '2', 'deer', 'monster', '40', '13', '1', 'monster/deer', '1', '100');
+INSERT INTO `map_info` VALUES ('664', 'TileMaps/KonyangUniv.Daejeon/JukhunDigitalFacilitie/floor_08/floor.tmx', '1', 'squirrel', 'monster', '14', '13', '1', 'monster/squirrel', '1', '50');
+INSERT INTO `map_info` VALUES ('665', 'TileMaps/KonyangUniv.Daejeon/JukhunDigitalFacilitie/floor_08/floor.tmx', '2', 'deer', 'monster', '38', '10', '1', 'monster/deer', '1', '100');
+INSERT INTO `map_info` VALUES ('666', 'TileMaps/KonyangUniv.Daejeon/JukhunDigitalFacilitie/floor_08/floor.tmx', '2', 'deer', 'monster', '19', '9', '1', 'monster/deer', '1', '100');
 
 -- ----------------------------
 -- Table structure for `map_list`
@@ -505,14 +510,15 @@ CREATE TABLE `monster_list` (
   `name` varchar(50) DEFAULT 'nameless',
   `type` varchar(20) DEFAULT '',
   `file_dir` varchar(100) DEFAULT NULL,
+  `hp` int(11) DEFAULT NULL,
   PRIMARY KEY (`idx`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- ----------------------------
 -- Records of monster_list
 -- ----------------------------
-INSERT INTO `monster_list` VALUES ('1', 'squirrel', 'monster', 'monster/squirrel');
-INSERT INTO `monster_list` VALUES ('2', 'deer', 'monster', 'monster/deer');
+INSERT INTO `monster_list` VALUES ('1', 'squirrel', 'monster', 'monster/squirrel', '50');
+INSERT INTO `monster_list` VALUES ('2', 'deer', 'monster', 'monster/deer', '100');
 
 -- ----------------------------
 -- Table structure for `server_info`
@@ -527,7 +533,7 @@ CREATE TABLE `server_info` (
 -- ----------------------------
 -- Records of server_info
 -- ----------------------------
-INSERT INTO `server_info` VALUES ('1', '2018-02-05 22:52:37');
+INSERT INTO `server_info` VALUES ('1', '2018-03-17 15:53:42');
 
 -- ----------------------------
 -- Table structure for `user_list`
@@ -551,9 +557,9 @@ CREATE TABLE `user_list` (
 -- ----------------------------
 -- Records of user_list
 -- ----------------------------
-INSERT INTO `user_list` VALUES ('3', 'GKF9876', '17', '9', 'TileMaps/KonyangUniv.Daejeon/JukhunDigitalFacilitie/floor_08/floor.tmx', '0', '0', '29', '2018-02-05 00:12:56', '2018-02-05 00:12:57', '2018-01-01 00:00:00');
-INSERT INTO `user_list` VALUES ('4', 'GKF1234', '17', '4', 'TileMaps/KonyangUniv.Daejeon/JukhunDigitalFacilitie/floor_08/floor.tmx', '0', '0', '29', '2018-02-05 22:49:02', '2018-02-05 22:49:06', '2018-01-01 00:00:00');
-INSERT INTO `user_list` VALUES ('5', 'GKF9797', '23', '10', 'TileMaps/KonyangUniv.Daejeon/JukhunDigitalFacilitie/floor_08/floor.tmx', '0', '0', '28', '2018-01-25 23:11:00', '2018-01-25 23:11:11', '2018-01-01 00:00:00');
+INSERT INTO `user_list` VALUES ('3', 'GKF9876', '17', '3', 'TileMaps/KonyangUniv.Daejeon/JukhunDigitalFacilitie/floor_08/floor.tmx', '0', '0', '29', '2018-03-17 00:42:57', '2018-03-17 00:43:00', '2018-01-01 00:00:00');
+INSERT INTO `user_list` VALUES ('4', 'GKF1234', '18', '7', 'TileMaps/KonyangUniv.Daejeon/JukhunDigitalFacilitie/floor_08/floor.tmx', '0', '0', '29', '2018-03-17 15:36:47', '2018-03-17 15:36:49', '2018-01-01 00:00:00');
+INSERT INTO `user_list` VALUES ('5', 'GKF9797', '18', '6', 'TileMaps/KonyangUniv.Daejeon/JukhunDigitalFacilitie/floor_08/floor.tmx', '0', '0', '28', '2018-03-17 00:43:01', '2018-03-17 00:43:01', '2018-01-01 00:00:00');
 INSERT INTO `user_list` VALUES ('6', 'gkf7676', '21', '12', 'TileMaps/KonyangUniv.Daejeon/JukhunDigitalFacilitie/floor_08/floor.tmx', '0', '0', '29', '2018-01-25 23:11:01', '2018-01-25 23:11:12', '2018-01-01 00:00:00');
 INSERT INTO `user_list` VALUES ('7', 'abcd1', '18', '7', 'TileMaps/KonyangUniv.Daejeon/JukhunDigitalFacilitie/floor_08/floor.tmx', '0', '0', '29', '2018-01-25 23:10:58', '2018-01-25 23:11:09', '2018-01-01 00:00:00');
 INSERT INTO `user_list` VALUES ('8', 'abcd2', '18', '8', 'TileMaps/KonyangUniv.Daejeon/JukhunDigitalFacilitie/floor_08/floor.tmx', '0', '0', '26', '2018-01-25 23:11:01', '2018-01-25 23:11:12', '2018-01-01 00:00:00');
